@@ -166,6 +166,12 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
   .lbl-t{display:none}
   .acts button{padding:8px 11px}
   .top{position:static}
+  th,td{padding:7px 4px;font-size:12px}
+  th{letter-spacing:0;font-size:9px}
+  td:first-child{max-width:76px}
+  .card{padding:18px 16px}
+  .bl .it{grid-template-columns:minmax(90px,36%) 1fr auto;gap:8px}
+  .bl .val{min-width:70px}
   .dd .menu{position:fixed;left:16px;right:16px;top:auto;bottom:16px;max-height:55vh}
 }
 @media print{
@@ -507,15 +513,15 @@ function renderTimeline() {
   const max = Math.max(1, ...series.map(tot));
   const step = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000].find(s => max / s <= 5) || 1000;
   const top = Math.ceil(max / step) * step;
-  const W = 900, H = 250, L = 38, Rr = 8, T = 10, B = 26, iw = W - L - Rr, ih = H - T - B;
+  const W = Math.max(300, Math.round(host.clientWidth) || 900), H = W < 560 ? 210 : 250, L = 34, Rr = 6, T = 10, B = 26, iw = W - L - Rr, ih = H - T - B;
   const bw = iw / series.length, gap = Math.min(4, bw * .2);
   let s = `<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Seat requests over time">`;
   for (let y = 0; y <= top; y += step) { const yy = T + ih - y / top * ih; s += `<line class="gl" x1="${L}" x2="${W - Rr}" y1="${yy}" y2="${yy}"/><text x="${L - 6}" y="${yy + 3.5}" text-anchor="end">${y}</text>`; }
-  const every = Math.ceil(series.length / 10);
+  const every = Math.ceil(series.length / Math.max(3, Math.floor(iw / 62)));
   series.forEach((p, i) => {
     const x = L + i * bw; let y = T + ih;
     for (const e of evs) { const h = p.o[e] / top * ih; if (h > 0) { y -= h; s += `<rect x="${x + gap / 2}" y="${y}" width="${Math.max(1, bw - gap)}" height="${h}" rx="2" fill="${evColor[e]}"/>`; } }
-    if (i % every === 0 || i === series.length - 1) s += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${shortDay(p.d)}</text>`;
+    if (i % every === 0) s += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${shortDay(p.d)}</text>`;
     s += `<rect class="hit" data-i="${i}" x="${x}" y="${T}" width="${bw}" height="${ih}"/>`;
   });
   host.innerHTML = s + "</svg>";
@@ -556,7 +562,7 @@ function renderMatrix() {
   const rows = [...m].map(([b, o]) => [b, o, Object.values(o).reduce((a, x) => a + x, 0)]).sort((a, b) => b[2] - a[2]);
   const mx = Math.max(1, ...rows.flatMap(r => Object.values(r[1])));
   const colTot = e => v.filter(r => r.event === e).length;
-  $("#matrix").innerHTML = `<table><thead><tr><th>Brand</th>${evs.map(e => `<th>${esc(e.split(" · ")[0])}<br>${esc((e.split(" · ")[1] || ""))}</th>`).join("")}<th>Total</th></tr></thead><tbody>` +
+  $("#matrix").innerHTML = `<table><thead><tr><th>Brand</th>${evs.map(e => `<th>${esc(e.split(" · ")[0])}<br>${esc((e.split(" · ")[1] || "").replace(/^\w+ /, ""))}</th>`).join("")}<th>Total</th></tr></thead><tbody>` +
     rows.map(([b, o, t]) => `<tr><td>${esc(b)}</td>${evs.map(e => o[e] ? `<td class="h" style="--a:${o[e] / mx}">${fmt(o[e])}</td>` : `<td class="hint">–</td>`).join("")}<td><b>${fmt(t)}</b></td></tr>`).join("") +
     `</tbody><tfoot><tr><td>All brands</td>${evs.map(e => `<td>${fmt(colTot(e))}</td>`).join("")}<td>${fmt(v.length)}</td></tr></tfoot></table>`;
 }
@@ -565,12 +571,12 @@ function renderHours() {
   const v = pool().filter(r => r.hour >= 0), host = $("#hours");
   if (!v.length) { host.innerHTML = `<div class="empty">No requests match.</div>`; return; }
   const h = Array(24).fill(0); v.forEach(r => h[r.hour]++);
-  const max = Math.max(...h), W = 520, H = 190, L = 6, B = 24, T = 8, bw = (W - L) / 24;
+  const max = Math.max(...h), W = Math.max(260, Math.round(host.clientWidth) || 520), H = 190, L = 6, B = 24, T = 8, bw = (W - L) / 24;
   let s = `<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Requests by hour of day">`;
   h.forEach((n, i) => {
     const hh = n / max * (H - B - T), x = L + i * bw;
     s += `<rect x="${x + 2}" y="${H - B - hh}" width="${bw - 4}" height="${hh}" rx="3" fill="var(--teal)" opacity=".9"/>`;
-    if (i % 3 === 0) s += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${String(i).padStart(2, "0")}</text>`;
+    if (i % (W < 400 ? 4 : 3) === 0) s += `<text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${String(i).padStart(2, "0")}</text>`;
     s += `<rect class="hit" data-i="${i}" x="${x}" y="${T}" width="${bw}" height="${H - B - T}"/>`;
   });
   host.innerHTML = s + "</svg>";
@@ -652,8 +658,8 @@ async function go(s, view, quiet) {
     sheet = s;
     if (view) { F = {}; for (const k in (view.f || {})) F[k] = new Set(view.f[k]); withDups = !!view.d; tlMode = view.m || "day"; }
     $("#tl-mode").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.m === tlMode));
+    $("#gate").hidden = true; $("#dash").hidden = false;   // visible first, so the charts can measure their width
     ingest(text);
-    $("#gate").hidden = true; $("#dash").hidden = false;
     lsSet("seat-board-sheet", `https://docs.google.com/spreadsheets/d/${s.id}/edit?gid=${s.gid}`);
     clearInterval(timer); timer = setInterval(() => go(sheet, null, true), REFRESH_MS);
   } catch (e) {
@@ -693,6 +699,9 @@ $("#export").onclick = () => {
   a.download = "seat-requests-by-brand-and-event.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
 
+let lastW = innerWidth;
+addEventListener("resize", () => { if (!DATA || innerWidth === lastW) return; lastW = innerWidth; renderTimeline(); renderHours(); });
+
 /* theme */
 function applyTheme(t) {
   if (!t) t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
@@ -710,7 +719,7 @@ $("#theme").onclick = () => { const n = document.documentElement.dataset.theme =
   if (!s) { const saved = lsGet("seat-board-sheet"); if (saved) { $("#glink").value = saved; s = sheetFrom(saved); } }
   if (s && /^[a-zA-Z0-9_-]+$/.test(s.id)) go(s, view);
 })();
-window.SeatBoard = { buildRows, show(text) { sheet = { id: "test", gid: "0" }; ingest(text); $("#gate").hidden = true; $("#dash").hidden = false; } };   // used by the tests
+window.SeatBoard = { buildRows, show(text) { sheet = { id: "test", gid: "0" }; $("#gate").hidden = true; $("#dash").hidden = false; ingest(text); } };   // used by the tests
 </script>
 </body>
 </html>
