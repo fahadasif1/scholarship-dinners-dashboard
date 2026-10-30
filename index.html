@@ -256,7 +256,7 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
 // Every London request counts as the 30th, whichever date the form said.
 const EVENT_DATE_FIX = { london: 30 };
 const REFRESH_MS = 120000;
-const DEFAULT_SHEET = { id: "1bAsSHljTTax2WMTmudpyljXuhG3c6INqHUKHDNrXeMM", gid: "0" };   // the Seat requests tab; a #sheet=… link overrides it
+const DEFAULT_SHEET = { id: "1n66qcAVbnR2s8TdpvAn1DhSrcF59yldMhJuH4bzPLdQ", gid: "0" };   // stats-only copy of the seat requests (no names, phones or emails); a #sheet=… link overrides it
 const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 const COLORS = ["#ffb347","#3fd0c9","#ff6b8b","#a58bff","#6be3a0","#ff7a59"];
 const AREA_NAMES = {M:"Manchester",B:"Birmingham",E:"East London",EC:"City of London",N:"North London",NW:"North-west London",SE:"South-east London",SW:"South-west London",W:"West London",WC:"Central London",
@@ -355,7 +355,7 @@ function buildRows(text) {
       couns: c || "Unassigned",
     });
   }
-  return { rows, dq };
+  return { rows, dq, hasPostcode: col("Postcode") !== undefined };
 }
 
 /* ---------- state ---------- */
@@ -402,6 +402,7 @@ function renderFilters() {
   const host = $("#filters");
   host.querySelectorAll(".dd,.toggle").forEach(n => n.remove());
   for (const d of DIMS) {
+    if (d.id === "area" && !DATA.hasPostcode) continue;
     const counts = countBy(pool(d.id), d.get);
     for (const v of (F[d.id] || [])) if (!counts.has(v)) counts.set(v, 0);
     let entries = [...counts];
@@ -599,15 +600,17 @@ function renderDq() {
     it(q.moved > 0, "London requests that said 29 October", "Counted as 30 October, the date the dinner moved to.", fmt(q.moved)),
     it(q.noEvent > 0, "No recognisable event", "The Event cell is empty or in a format the board cannot read.", fmt(q.noEvent)),
     it(q.badDate > 0, "No readable submission time", "These rows are missing from the timeline and the time-of-day chart.", fmt(q.badDate)),
-    it(q.noPostcode + q.oddPostcode > 0, "Missing or non-UK postcode", "Counted as “Unknown” in Where they live.", fmt(q.noPostcode + q.oddPostcode)),
+    !DATA.hasPostcode ? "" : it(q.noPostcode + q.oddPostcode > 0, "Missing or non-UK postcode", "Counted as “Unknown” in Where they live.", fmt(q.noPostcode + q.oddPostcode)),
     it(q.noHeard > 0, "“Heard about us” left blank", "", fmt(q.noHeard)),
     it(q.brandVariants + q.counsVariants > 0, "Spelling variants merged", "Brand or counsellor names that differed only by capital letters or spacing.", fmt(q.brandVariants + q.counsVariants)),
     it(false, "Requests with no counsellor", "Unassigned in the Counsellor column.", `${fmt(unas)} · ${pct(unas, all.length)}`),
-  ].join("");
+  ].filter(Boolean).join("");
 }
 
 function render() {
   if (!DATA) return;
+  $("#bl-area").closest(".card").hidden = !DATA.hasPostcode;   // no Postcode column in a stats-only sheet
+  $("#bl-visa").closest(".card").classList.toggle("w12", !DATA.hasPostcode);
   renderFilters(); renderChips(); renderEvents(); renderKpis(); renderTimeline();
   barList("#bl-brand", "brand");
   barList("#bl-visa", "visa");
