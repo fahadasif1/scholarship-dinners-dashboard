@@ -1,6 +1,6 @@
 # Scholarship Dinners Seat Board
 
-A live stats board for the **Scholarship Dinners – Seat Requests** Google Sheet: requests per event and brand, timeline, visa status, where guests live, how they heard about the dinners, traffic source, ticketing and check-in progress, and data quality. Same look as the Scorp outcomes dashboard.
+A live stats board for the **Scholarship Dinners – Seat Requests** Google Sheet: requests per event and brand, timeline, visa status, where guests live, how they heard about the dinners, traffic source, and ticketing and check-in progress. Same look as the Scorp outcomes dashboard.
 
 - **Live page:** https://fahadasif1.github.io/scholarship-dinners-dashboard/
 - **Repo:** https://github.com/fahadasif1/scholarship-dinners-dashboard (public, GitHub Pages from `main`, root)
@@ -14,10 +14,10 @@ A live stats board for the **Scholarship Dinners – Seat Requests** Google Shee
 
 ## Rules baked in
 
-- **London is the 30 October event.** It was first listed for Thu 29 Oct and then moved. Every London row counts as 30 Oct whichever date the form said (`EVENT_DATE_FIX` at the top of the script in `index.html`). Rows that said the 29th are counted in the data-quality panel.
+- **London is the 30 October event.** It was first listed for Thu 29 Oct and then moved. Every London row counts as 30 Oct whichever date the form said (`EVENT_DATE_FIX` at the top of the script in `index.html`).  The London card notes how many signed up under the 29th.
 - **Flagged duplicates are left out** (Duplicate? = Yes) unless you tick *Include flagged duplicates*.
-- Brand and counsellor names that differ only by capitals or spacing are merged.
-- The sheet is matched by column header (Submitted at, Brand, Event, Postcode (optional), Visa status, Heard about us, Marketing opt-in, utm_source, Ticket sent, Checked in (ID seen), Counsellor, Duplicate?, Page variant), so column order does not matter.
+- Brand names that differ only by capitals or spacing are merged.
+- The sheet is matched by column header (Submitted at, Brand, Event, Postcode (optional), Visa status, Heard about us, Marketing opt-in, utm_source, Ticket sent, Checked in (ID seen), Duplicate?, Page variant), so column order does not matter.
 
 ## Privacy
 

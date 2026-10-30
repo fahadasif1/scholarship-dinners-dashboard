@@ -148,12 +148,6 @@ tr:last-child td{border-bottom:0}
 td.h{background:rgba(var(--heat),calc(var(--a)*.45))}
 tfoot td{font-weight:600;border-top:1px solid var(--line2)}
 .scroll{overflow-x:auto}
-.dq{display:flex;flex-direction:column}
-.dq .r{display:flex;justify-content:space-between;gap:16px;padding:10px 4px;border-bottom:1px solid var(--line)}
-.dq .r:last-child{border:0}
-.dq .r span:last-child{font-family:var(--mono);white-space:nowrap}
-.dq small{display:block;color:var(--ink3);font-size:12px;margin-top:2px}
-.ok{color:var(--good)}.warn{color:var(--gold)}
 #tip{position:fixed;z-index:60;pointer-events:none;background:var(--pop);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;font-size:12.5px;box-shadow:var(--shadow);opacity:0;transition:opacity .12s;max-width:260px}
 #tip b{font-weight:600}
 footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
@@ -235,10 +229,8 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
     <div class="card"><h2>Registration page</h2><div class="cap">Which brand page or partner office the form was filled on.</div><div class="bl" id="bl-variant"></div></div>
     <div class="card"><h2>Time of day</h2><div class="cap">When requests come in (hour of submission).</div><div id="hours"></div></div>
 
-    <div class="card w8"><h2>Event-night readiness</h2><div class="cap">Tickets sent and guests checked in at the door, per event. Updates as the sheet's “Ticket sent” and “Checked in” columns are ticked.</div><div class="scroll" id="ready"></div></div>
-    <div class="card w4"><h2>Counsellors</h2><div class="cap">Requests with a counsellor assigned.</div><div class="bl" id="bl-couns"></div></div>
+    <div class="card w12"><h2>Event-night readiness</h2><div class="cap">Tickets sent and guests checked in at the door, per event. Updates as the sheet's “Ticket sent” and “Checked in” columns are ticked.</div><div class="scroll" id="ready"></div></div>
 
-    <div class="card w12"><h2>Data quality</h2><div class="cap">Things in the sheet worth tidying. Not affected by filters.</div><div class="dq" id="dq"></div></div>
   </div>
 
   <footer>
@@ -322,25 +314,16 @@ function buildRows(text) {
   const col = n => idx[n.toLowerCase()];
   for (const need of ["Submitted at", "Brand", "Event"]) if (col(need) === undefined) throw new Error(`The sheet has no “${need}” column. Is this the Seat requests tab?`);
   const g = (r, n) => { const i = col(n); return i === undefined ? "" : (r[i] || "").trim(); };
-  const names = {};                       // lower-case key -> display spelling (first seen), so "Zaib un nisa" and "Zaib un Nisa" merge
-  const same = (v, bag) => { if (!v) return ""; const k = v.toLowerCase().replace(/\s+/g, " "); return bag[k] || (bag[k] = canon(v)); };
-  const brands = {}, couns = {};
-  const dq = { badDate: 0, noPostcode: 0, oddPostcode: 0, noHeard: 0, noEvent: 0, moved: 0, brandVariants: 0, counsVariants: 0 };
+  const same = (v, bag) => { if (!v) return ""; const k = v.toLowerCase().replace(/\s+/g, " "); return bag[k] || (bag[k] = canon(v)); };   // brands differing only by capitals or spacing merge
+  const brands = {};
   const rows = [];
   for (const r of R.slice(1)) {
     if (!r.some(v => v && v.trim())) continue;
     const t = parseDate(g(r, "Submitted at"));
-    if (!t) dq.badDate++;
     const ev = parseEvent(g(r, "Event"));
-    if (!ev.date) dq.noEvent++;
-    if (ev.moved) dq.moved++;
-    const pc = g(r, "Postcode"), area = postcodeArea(pc);
-    if (!pc) dq.noPostcode++; else if (!area) dq.oddPostcode++;
+    const area = postcodeArea(g(r, "Postcode"));
     const brand = same(g(r, "Brand"), brands) || "No brand";
-    if (g(r, "Brand") && canon(g(r, "Brand")) !== brand) dq.brandVariants++;
-    const c = same(g(r, "Counsellor"), couns);
-    if (g(r, "Counsellor") && canon(g(r, "Counsellor")) !== c) dq.counsVariants++;
-    const heard = g(r, "Heard about us"); if (!heard) dq.noHeard++;
+    const heard = g(r, "Heard about us");
     rows.push({
       t, day: t ? dayKey(t) : "", hour: t ? t.getHours() : -1,
       event: ev.label, eventDate: ev.date, moved: ev.moved,
@@ -352,10 +335,9 @@ function buildRows(text) {
       source: g(r, "utm_source") || "Direct / none",
       area: area || "Unknown",
       ticket: truthy(g(r, "Ticket sent")), checked: truthy(g(r, "Checked in (ID seen)")),
-      couns: c || "Unassigned",
     });
   }
-  return { rows, dq, hasPostcode: col("Postcode") !== undefined };
+  return { rows, hasPostcode: col("Postcode") !== undefined };
 }
 
 /* ---------- state ---------- */
@@ -367,7 +349,6 @@ const DIMS = [
   { id: "source",  label: "Source",        get: r => r.source },
   { id: "area",    label: "Postcode area", get: r => r.area },
   { id: "variant", label: "Page",          get: r => r.variant },
-  { id: "couns",   label: "Counsellor",    get: r => r.couns },
 ];
 const DIM = Object.fromEntries(DIMS.map(d => [d.id, d]));
 let DATA = null, sheet = null, F = {}, withDups = false, tlMode = "day", loadedAt = null, timer = null;
@@ -590,23 +571,6 @@ function renderReady() {
   $("#ready").innerHTML = `<table><thead><tr><th>Event</th><th>Requests</th><th>Tickets sent</th><th>Checked in</th><th>Still to send</th></tr></thead><tbody>${evs.map(e => row(e, v.filter(r => r.event === e))).join("")}</tbody><tfoot>${row("All events", v)}</tfoot></table>`;
 }
 
-function renderDq() {
-  const q = DATA.dq, all = DATA.rows, dups = all.filter(r => r.dup).length;
-  const unas = all.filter(r => r.couns === "Unassigned").length;
-  const it = (bad, title, detail, n) => `<div class="r"><span>${title}<small>${detail}</small></span><span class="${bad ? "warn" : "ok"}">${n}</span></div>`;
-  $("#dq").innerHTML = [
-    it(false, "Rows in the sheet", "Every submission, including duplicates.", fmt(all.length)),
-    it(dups > 0, "Flagged duplicates", "Marked “Yes” in the Duplicate? column. Left out of the counts unless you tick Include flagged duplicates.", `${fmt(dups)} · ${pct(dups, all.length)}`),
-    it(q.moved > 0, "London requests that said 29 October", "Counted as 30 October, the date the dinner moved to.", fmt(q.moved)),
-    it(q.noEvent > 0, "No recognisable event", "The Event cell is empty or in a format the board cannot read.", fmt(q.noEvent)),
-    it(q.badDate > 0, "No readable submission time", "These rows are missing from the timeline and the time-of-day chart.", fmt(q.badDate)),
-    !DATA.hasPostcode ? "" : it(q.noPostcode + q.oddPostcode > 0, "Missing or non-UK postcode", "Counted as “Unknown” in Where they live.", fmt(q.noPostcode + q.oddPostcode)),
-    it(q.noHeard > 0, "“Heard about us” left blank", "", fmt(q.noHeard)),
-    it(q.brandVariants + q.counsVariants > 0, "Spelling variants merged", "Brand or counsellor names that differed only by capital letters or spacing.", fmt(q.brandVariants + q.counsVariants)),
-    it(false, "Requests with no counsellor", "Unassigned in the Counsellor column.", `${fmt(unas)} · ${pct(unas, all.length)}`),
-  ].filter(Boolean).join("");
-}
-
 function render() {
   if (!DATA) return;
   $("#bl-area").closest(".card").hidden = !DATA.hasPostcode;   // no Postcode column in a stats-only sheet
@@ -618,8 +582,7 @@ function render() {
   barList("#bl-heard", "heard");
   barList("#bl-source", "source");
   barList("#bl-variant", "variant");
-  barList("#bl-couns", "couns");
-  renderMatrix(); renderHours(); renderReady(); renderDq();
+  renderMatrix(); renderHours(); renderReady();
   saveHash();
 }
 
