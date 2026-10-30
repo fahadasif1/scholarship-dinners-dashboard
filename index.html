@@ -54,10 +54,8 @@ button.ico svg{margin:0}
 #gate[hidden],#dash[hidden]{display:none}
 .gate-card{max-width:640px;width:100%;padding:36px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,var(--panel2),var(--panel))}
 .gate-card h1{font-size:clamp(28px,4vw,44px)}
-.gform{display:flex;gap:10px;margin:22px 0 12px;flex-wrap:wrap}
-.gform input{flex:1;min-width:240px;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--line2);border-radius:999px;padding:12px 18px;outline:none}
-.gform input:focus{border-color:var(--gold)}
 #gmsg.err{color:var(--rose)}
+.gform{display:flex;gap:10px;margin:22px 0 4px;flex-wrap:wrap}
 
 /* app bar */
 .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0;margin-bottom:12px;
@@ -189,12 +187,8 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
   <div class="gate-card">
     <div class="eyebrow"><span class="pulse"></span>Scholarship Dinners · Seat requests</div>
     <h1>Seat <em>Board</em></h1>
-    <p class="sub">Paste the Google Sheet link and press Go. The sheet must be shared as “Anyone with the link can view”. The data is read straight into your browser and is not stored anywhere else.</p>
-    <form id="gform" class="gform">
-      <input id="glink" type="url" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off" required aria-label="Google Sheet link">
-      <button class="primary" type="submit" id="ggo">Go</button>
-    </form>
-    <div id="gmsg" class="hint" role="status"></div>
+    <p class="sub" id="gmsg" role="status">Reading the sheet…</p>
+    <div class="gform"><button class="primary" type="button" id="retry" hidden>Try again</button></div>
   </div>
 </section>
 
@@ -209,7 +203,7 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
       <button id="print" type="button" title="Print or save as PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 14h10v6H7z"/></svg><span class="lbl-t">Print</span></button>
       <button id="refresh" type="button" title="Re-read the sheet now"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg><span class="lbl-t">Refresh</span></button>
       <button id="theme" type="button" class="ico" title="Switch light / dark" aria-label="Switch light or dark theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>
-      <button id="chg" type="button" class="ico" title="Load a different sheet" aria-label="Change sheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h13"/><path d="m14 4 3 3-3 3"/><path d="M20 17H7"/><path d="m10 14-3 3 3 3"/></svg></button>
+      
     </div>
   </header>
 
@@ -262,6 +256,7 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
 // Every London request counts as the 30th, whichever date the form said.
 const EVENT_DATE_FIX = { london: 30 };
 const REFRESH_MS = 120000;
+const DEFAULT_SHEET = { id: "1bAsSHljTTax2WMTmudpyljXuhG3c6INqHUKHDNrXeMM", gid: "0" };   // the Seat requests tab; a #sheet=… link overrides it
 const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 const COLORS = ["#ffb347","#3fd0c9","#ff6b8b","#a58bff","#6be3a0","#ff7a59"];
 const AREA_NAMES = {M:"Manchester",B:"Birmingham",E:"East London",EC:"City of London",N:"North London",NW:"North-west London",SE:"South-east London",SW:"South-west London",W:"West London",WC:"Central London",
@@ -626,13 +621,7 @@ function render() {
 }
 
 /* ---------- loading, sharing, URL state ---------- */
-function sheetFrom(link) {
-  const m = /\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/.exec(link) || /^([a-zA-Z0-9_-]{25,})$/.exec(link.trim());
-  if (!m) return null;
-  const gid = (/[#&?]gid=(\d+)/.exec(link) || [])[1] || "0";
-  return { id: m[1], gid };
-}
-const SHARE_HELP = "Could not read the sheet. In Google Sheets choose Share → General access → “Anyone with the link” → Viewer, then press Refresh.";
+const SHARE_HELP = "Could not read the sheet. It needs to be shared in Google Sheets as General access → “Anyone with the link” → Viewer.";
 async function fetchSheet(s) {
   let r;
   try { r = await fetch(`https://docs.google.com/spreadsheets/d/${s.id}/gviz/tq?tqx=out:csv&gid=${s.gid}`); }
@@ -652,7 +641,7 @@ function ingest(text) {
 }
 async function go(s, view, quiet) {
   const msg = $("#gmsg");
-  if (!quiet) { msg.className = "hint"; msg.textContent = "Reading the sheet…"; $("#ggo").disabled = true; }
+  if (!quiet) { msg.className = "sub"; msg.textContent = "Reading the sheet…"; $("#retry").hidden = true; }
   try {
     const text = await fetchSheet(s);
     sheet = s;
@@ -660,26 +649,19 @@ async function go(s, view, quiet) {
     $("#tl-mode").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.m === tlMode));
     $("#gate").hidden = true; $("#dash").hidden = false;   // visible first, so the charts can measure their width
     ingest(text);
-    lsSet("seat-board-sheet", `https://docs.google.com/spreadsheets/d/${s.id}/edit?gid=${s.gid}`);
     clearInterval(timer); timer = setInterval(() => go(sheet, null, true), REFRESH_MS);
   } catch (e) {
     if (quiet) { $("#asof").textContent = "Could not refresh · showing " + loadedAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); }
-    else { msg.className = "hint err"; msg.textContent = e.message; $("#gate").hidden = false; $("#dash").hidden = true; }
-  } finally { $("#ggo").disabled = false; }
+    else { msg.className = "sub err"; msg.textContent = e.message; $("#retry").hidden = false; $("#gate").hidden = false; $("#dash").hidden = true; }
+  }
 }
 function saveView() { const f = {}; for (const k in F) if (F[k].size) f[k] = [...F[k]]; return { f, d: withDups ? 1 : 0, m: tlMode }; }
 function viewUrl() { return location.origin + location.pathname + `#sheet=${sheet.id}&gid=${sheet.gid}&v=${b64e(saveView())}`; }
 function saveHash() { try { history.replaceState(null, "", viewUrl()); } catch (e) { /* sandboxed */ } }
 
-$("#gform").onsubmit = e => {
-  e.preventDefault();
-  const s = sheetFrom($("#glink").value);
-  if (!s) { $("#gmsg").className = "hint err"; $("#gmsg").textContent = "That does not look like a Google Sheets link."; return; }
-  go(s);
-};
+$("#retry").onclick = () => go(sheet || DEFAULT_SHEET, null, false);
 $("#refresh").onclick = () => go(sheet, null, false);
 $("#reset").onclick = () => { F = {}; withDups = false; render(); };
-$("#chg").onclick = () => { clearInterval(timer); $("#dash").hidden = true; $("#gate").hidden = false; history.replaceState(null, "", location.pathname); };
 $("#print").onclick = () => print();
 $("#share").onclick = async () => {
   const b = $("#share"), l = b.querySelector(".lbl-t"), old = l.textContent;
@@ -710,14 +692,13 @@ function applyTheme(t) {
 applyTheme(lsGet("seat-board-theme"));
 $("#theme").onclick = () => { const n = document.documentElement.dataset.theme === "light" ? "dark" : "light"; applyTheme(n); lsSet("seat-board-theme", n); };
 
-/* start: view link > remembered sheet > gate */
+/* start: a #sheet= view link overrides the built-in sheet */
 (function start() {
   const h = new URLSearchParams(location.hash.slice(1));
-  let s = null, view = null;
-  if (h.get("sheet")) s = { id: h.get("sheet"), gid: h.get("gid") || "0" };
+  let s = DEFAULT_SHEET, view = null;
+  if (/^[a-zA-Z0-9_-]{25,}$/.test(h.get("sheet") || "")) s = { id: h.get("sheet"), gid: /^\d+$/.test(h.get("gid") || "") ? h.get("gid") : "0" };
   if (h.get("v")) { try { view = b64d(h.get("v")); } catch (e) { /* ignore bad link */ } }
-  if (!s) { const saved = lsGet("seat-board-sheet"); if (saved) { $("#glink").value = saved; s = sheetFrom(saved); } }
-  if (s && /^[a-zA-Z0-9_-]+$/.test(s.id)) go(s, view);
+  go(s, view);
 })();
 window.SeatBoard = { buildRows, show(text) { sheet = { id: "test", gid: "0" }; $("#gate").hidden = true; $("#dash").hidden = false; ingest(text); } };   // used by the tests
 </script>
