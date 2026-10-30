@@ -24,7 +24,7 @@ A live stats board for the **Scholarship Dinners – Seat Requests** Google Shee
 - The page reads a **stats-only sheet** (`DEFAULT_SHEET` in `index.html`): no names, phones, emails or postcodes, so it is safe for that sheet to be link-readable. The original sheet with contact details stays private.
 - The browser reads the sheet straight from Google and keeps it in memory. Names, phone numbers and emails are never shown, exported or sent anywhere; only counts are.
 - The stats-only sheet's ID is in the public repo, so anyone who finds it can read the rows in that sheet. Keep personal columns out of it. Google shares a whole spreadsheet, not single tabs, so never add contact details as another tab there.
-- If the sheet has no `Postcode` column, the *Where they live* card, its filter and its data-quality row are hidden.
+- If the sheet has no `Postcode` column, the *Where they live* cardand its filter are hidden.
 
 ## Develop
 
