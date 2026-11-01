@@ -14,7 +14,7 @@ A live stats board for the **Scholarship Dinners – Seat Requests** Google Shee
 
 ## Rules baked in
 
-- **London is the 30 October event.** It was first listed for Thu 29 Oct and then moved. Every London row counts as 30 Oct whichever date the form said (`EVENT_DATE_FIX` at the top of the script in `index.html`).  The London card notes how many signed up under the 29th.
+- **Two events were moved.** London was first listed for Thu 29 Oct and is now Fri 30 Oct; Birmingham was first listed for Mon 2 Nov and is now Thu 12 Nov. Every row counts on the final date whichever date the form said (`EVENT_DATE_FIX` at the top of the script in `index.html`). Each moved card notes how many signed up under the old date. When another event moves, add its city and new day to `EVENT_DATE_FIX`.
 - **Flagged duplicates are left out** (Duplicate? = Yes) unless you tick *Include flagged duplicates*.
 - Brand names that differ only by capitals or spacing are merged.
 - The sheet is matched by column header (Submitted at, Brand, Event, Postcode (optional), Visa status, Heard about us, Marketing opt-in, utm_source, Ticket sent, Checked in (ID seen), Duplicate?, Page variant), so column order does not matter.

@@ -244,9 +244,9 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
 <script>
 "use strict";
 /* ---------- configuration ---------- */
-// The London dinner was first listed for Thu 29 Oct and then moved to Fri 30 Oct.
-// Every London request counts as the 30th, whichever date the form said.
-const EVENT_DATE_FIX = { london: 30 };
+// Two dinners were moved after bookings opened: London from Thu 29 Oct to Fri 30 Oct, and Birmingham from Mon 2 Nov to Thu 12 Nov.
+// Every request counts on the final date, whichever date the form said.
+const EVENT_DATE_FIX = { london: 30, birmingham: 12 };
 const REFRESH_MS = 120000;
 const DEFAULT_SHEET = { id: "1n66qcAVbnR2s8TdpvAn1DhSrcF59yldMhJuH4bzPLdQ", gid: "0" };   // stats-only copy of the seat requests (no names, phones or emails); a #sheet=… link overrides it
 const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
@@ -298,7 +298,8 @@ function parseEvent(raw) {
   const day = EVENT_DATE_FIX[city.toLowerCase()] || said;
   const date = new Date(+m[4], mi, day);
   const wd = date.toLocaleDateString("en-GB", { weekday: "short" });
-  return { label: `${city} · ${wd} ${day} ${date.toLocaleDateString("en-GB", { month: "short" })}`, city, date, moved: day !== said };
+  const mon = date.toLocaleDateString("en-GB", { month: "short" });
+  return { label: `${city} · ${wd} ${day} ${mon}`, city, date, moved: day !== said, from: day !== said ? `${said} ${mon}` : "" };
 }
 function postcodeArea(pc) {
   const m = /^([A-Z]{1,2})\d/.exec((pc || "").toUpperCase().replace(/\s+/g, ""));
@@ -326,7 +327,7 @@ function buildRows(text) {
     const heard = g(r, "Heard about us");
     rows.push({
       t, day: t ? dayKey(t) : "", hour: t ? t.getHours() : -1,
-      event: ev.label, eventDate: ev.date, moved: ev.moved,
+      event: ev.label, eventDate: ev.date, moved: ev.moved, movedFrom: ev.from,
       brand, variant: g(r, "Page variant") || "(none)",
       dup: truthy(g(r, "Duplicate?")),
       visa: g(r, "Visa status") || "Not given",
@@ -429,7 +430,7 @@ function renderChips() {
 function renderEvents() {
   const all = pool("event");
   const byEv = new Map();
-  for (const r of all) { const o = byEv.get(r.event) || { n: 0, t: 0, c: 0, moved: 0, date: r.eventDate }; o.n++; if (r.ticket) o.t++; if (r.checked) o.c++; if (r.moved) o.moved++; byEv.set(r.event, o); }
+  for (const r of all) { const o = byEv.get(r.event) || { n: 0, t: 0, c: 0, moved: 0, from: "", date: r.eventDate }; o.n++; if (r.ticket) o.t++; if (r.checked) o.c++; if (r.moved) { o.moved++; o.from = r.movedFrom; } byEv.set(r.event, o); }
   const list = [...byEv].sort((a, b) => (a[1].date || Infinity) - (b[1].date || Infinity));
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const max = Math.max(1, ...list.map(x => x[1].n));
@@ -445,7 +446,7 @@ function renderEvents() {
       <div class="big">${fmt(o.n)}<small>seat requests</small></div>
       <div class="meter"><i style="width:${o.n / max * 100}%"></i></div>
       <div class="row"><span>Tickets sent ${fmt(o.t)}</span><span>Checked in ${fmt(o.c)}</span></div>
-      ${o.moved ? `<div class="note">Includes ${fmt(o.moved)} who signed up when it was listed for the 29th</div>` : ""}
+      ${o.moved ? `<div class="note">Includes ${fmt(o.moved)} who signed up when it was listed for ${esc(o.from)}</div>` : ""}
     </button>`;
   }).join("") || `<div class="empty">No events match.</div>`;
   $("#events").querySelectorAll(".ev").forEach(b => b.onclick = () => toggle("event", b.dataset.ev));
