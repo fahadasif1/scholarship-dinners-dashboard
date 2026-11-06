@@ -150,6 +150,23 @@ tfoot td{font-weight:600;border-top:1px solid var(--line2)}
 .scroll{overflow-x:auto}
 #tip{position:fixed;z-index:60;pointer-events:none;background:var(--pop);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;font-size:12.5px;box-shadow:var(--shadow);opacity:0;transition:opacity .12s;max-width:260px}
 #tip b{font-weight:600}
+/* registrations vs attendees */
+.att-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.att-top .legend{margin-bottom:0}
+.att-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.att-totals div{min-width:0}
+.att-totals span{display:block;font-size:12px;color:var(--ink3)}
+.att-totals b{display:block;font-size:24px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.att-rows{display:flex;flex-direction:column;gap:3px}
+.att-row{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr) 84px 44px;gap:12px;align-items:center;padding:5px 8px;border-radius:9px}
+.att-row:hover{background:var(--hover)}
+.att-nm{font-size:13px;min-width:0;overflow-wrap:anywhere}
+.att-tr{position:relative;height:16px}
+.att-tr i{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;min-width:3px}
+.att-reg{background:var(--line2)}
+.att-att{background:var(--gold);box-shadow:2px 0 0 var(--panel)}
+.att-ct{font-family:var(--mono);font-size:12px;color:var(--ink2);text-align:right;white-space:nowrap}
+.att-pc{font-family:var(--mono);font-size:12px;color:var(--ink);text-align:right}
 footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
 
 @media (max-width:900px){
@@ -165,6 +182,10 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
   .bl .it{grid-template-columns:minmax(90px,36%) 1fr auto;gap:8px}
   .bl .val{min-width:70px}
   .dd .menu{position:fixed;left:16px;right:16px;top:auto;bottom:16px;max-height:55vh}
+  .att-totals{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .att-row{grid-template-columns:minmax(0,1fr) auto 40px;row-gap:5px;padding:6px 4px}
+  .att-nm{grid-column:1;grid-row:1}.att-ct{grid-column:2;grid-row:1}.att-pc{grid-column:3;grid-row:1}
+  .att-tr{grid-column:1 / -1;grid-row:2}
 }
 @media print{
   .top,.bar .noprint,.acts,#tip,.noprint{display:none!important}
@@ -231,6 +252,13 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
 
     <div class="card w12"><h2>Event-night readiness</h2><div class="cap">Tickets sent and guests checked in at the door, per event. Updates as the sheet's “Ticket sent” and “Checked in” columns are ticked.</div><div class="scroll" id="ready"></div></div>
 
+    <div class="card w12" id="attendance"><h2>Manchester: registered vs attended, by brand</h2><div class="cap">Thu 5 Nov, from the door scanner. Registered counts every ticket issued, online and offline, including repeat bookings, so it is higher than the Manchester card at the top, which leaves out flagged duplicates. Attended counts tickets scanned at the door, so anyone let in without a scan is not included. Scorp Staff looks low because not everyone who registered was given a ticket. These are fixed totals: the filters above do not change them.</div>
+      <div class="att-totals" id="att-totals"></div>
+      <div class="att-top"><div class="legend"><span><i style="background:var(--line2)"></i>Registered</span><span><i style="background:var(--gold)"></i>Attended</span></div>
+      <div class="seg noprint" id="att-sort"><button data-s="registered" class="on">Most registered</button><button data-s="turnout">Best turnout</button></div></div>
+      <div class="att-rows" id="att-rows"></div>
+    </div>
+
   </div>
 
   <footer>
@@ -248,6 +276,13 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
 // Every request counts on the final date, whichever date the form said.
 const EVENT_DATE_FIX = { london: 30, birmingham: 12 };
 const REFRESH_MS = 120000;
+// Manchester, Thu 5 Nov: tickets issued and tickets scanned at the door, per brand. Counts only, read on 6 Nov from the scanner sheet (Tickets and Scanned tabs) plus its offline ticket list.
+const MANCHESTER_ATTENDANCE = [
+  ["Kings Consultancy", 167, 46], ["Study Advisers", 163, 32], ["Study Icon", 160, 70], ["Students Club", 143, 23],
+  ["Universal Study Advisors", 120, 29], ["Career Advisers", 95, 19], ["Scorp Staff", 68, 12], ["IAUK", 43, 4],
+  ["Study Empire", 17, 8], ["Study Linkers", 15, 9], ["Study Consultants", 5, 2], ["In-World Education", 4, 0],
+  ["Edulytic", 4, 3], ["SAUK Hartford", 1, 1],
+];
 const DEFAULT_SHEET = { id: "1n66qcAVbnR2s8TdpvAn1DhSrcF59yldMhJuH4bzPLdQ", gid: "0" };   // stats-only copy of the seat requests (no names, phones or emails); a #sheet=… link overrides it
 const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 const COLORS = ["#ffb347","#3fd0c9","#ff6b8b","#a58bff","#6be3a0","#ff7a59"];
@@ -572,6 +607,25 @@ function renderReady() {
   $("#ready").innerHTML = `<table><thead><tr><th>Event</th><th>Requests</th><th>Tickets sent</th><th>Checked in</th><th>Still to send</th></tr></thead><tbody>${evs.map(e => row(e, v.filter(r => r.event === e))).join("")}</tbody><tfoot>${row("All events", v)}</tfoot></table>`;
 }
 
+let attSort = "registered";
+function renderAttendance() {
+  const reg = MANCHESTER_ATTENDANCE.reduce((s, r) => s + r[1], 0), att = MANCHESTER_ATTENDANCE.reduce((s, r) => s + r[2], 0);
+  $("#att-totals").innerHTML = [["Registered", fmt(reg)], ["Attended", fmt(att)], ["Did not attend", fmt(reg - att)], ["Turnout", pct(att, reg)]].map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join("");
+  const rows = [...MANCHESTER_ATTENDANCE].sort((a, b) => attSort === "turnout" ? (b[2] / b[1] - a[2] / a[1]) || (b[1] - a[1]) : b[1] - a[1]);
+  const max = Math.max(...rows.map(r => r[1]));
+  const box = $("#att-rows");
+  box.innerHTML = rows.map(([b, r, a]) => `<div class="att-row"><div class="att-nm">${esc(b)}</div><div class="att-tr"><i class="att-reg" style="width:${r / max * 100}%"></i>${a ? `<i class="att-att" style="width:${a / max * 100}%"></i>` : ""}</div><div class="att-ct">${fmt(a)} of ${fmt(r)}</div><div class="att-pc">${pct(a, r)}</div></div>`).join("");
+  [...box.children].forEach((el, i) => {
+    const [b, r, a] = rows[i];
+    el.onmousemove = e => showTip(e, `<b>${esc(b)}</b><br>Registered: ${fmt(r)}<br>Attended: ${fmt(a)}<br>Did not attend: ${fmt(r - a)}<br>Turnout: ${pct(a, r)}`);
+    el.onmouseleave = hideTip;
+  });
+  document.querySelectorAll("#att-sort button").forEach(btn => {
+    btn.classList.toggle("on", btn.dataset.s === attSort);
+    btn.onclick = () => { attSort = btn.dataset.s; renderAttendance(); };
+  });
+}
+
 function render() {
   if (!DATA) return;
   $("#bl-area").closest(".card").hidden = !DATA.hasPostcode;   // no Postcode column in a stats-only sheet
@@ -583,7 +637,7 @@ function render() {
   barList("#bl-heard", "heard");
   barList("#bl-source", "source");
   barList("#bl-variant", "variant");
-  renderMatrix(); renderHours(); renderReady();
+  renderMatrix(); renderHours(); renderReady(); renderAttendance();
   saveHash();
 }
 
