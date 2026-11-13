@@ -481,10 +481,11 @@ function renderEvents() {
       <div class="big">${fmt(o.n)}<small>seat requests</small></div>
       <div class="meter"><i style="width:${o.n / max * 100}%"></i></div>
       <div class="row"><span>Tickets sent ${fmt(o.t)}</span><span>Checked in ${fmt(o.c)}</span></div>
+      ${/^birmingham/i.test(label) ? `<div class="note">Event done: open the registered vs attended page →</div>` : ""}
       ${o.moved ? `<div class="note">Includes ${fmt(o.moved)} who signed up when it was listed for ${esc(o.from)}</div>` : ""}
     </button>`;
   }).join("") || `<div class="empty">No events match.</div>`;
-  $("#events").querySelectorAll(".ev").forEach(b => b.onclick = () => toggle("event", b.dataset.ev));
+  $("#events").querySelectorAll(".ev").forEach(b => b.onclick = () => /^birmingham/i.test(b.dataset.ev) ? (location.href = "birmingham.html") : toggle("event", b.dataset.ev));
 }
 
 function renderKpis() {
