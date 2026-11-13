@@ -240,7 +240,7 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
     <div class="card"><h2>Visa status</h2><div class="cap">What guests told us on the form, and who came.</div><div class="att-rows" id="visa"></div></div>
     <div class="card"><h2>How they heard about us</h2><div class="cap">The “heard about us” answer, and who came.</div><div class="att-rows" id="heard"></div></div>
     <div class="card"><h2>Where they live</h2><div class="cap">UK postcode area from the form (top 11).</div><div class="att-rows" id="pc"></div></div>
-    <div class="card"><h2>Hour they registered</h2><div class="cap">Time of day the form was filled (UK time), and who came.</div><div id="hour"></div></div>
+    <div class="card"><h2>Hour they registered</h2><div class="cap">Time of day the form was filled (UK time, 12-hour clock), and who came.</div><div id="hour"></div></div>
     <div class="card"><h2>Marketing opt-in</h2><div class="cap">Did they agree to hear from us again?</div><div class="att-rows" id="opt"></div></div>
     <div class="card"><h2>At the door</h2><div class="cap">What the scanner recorded (test scans left out).</div><div class="att-rows" id="door"></div></div>
   </section>
@@ -271,6 +271,8 @@ const tip = $("#tip");
 function showTip(e, h) { tip.innerHTML = h; tip.style.opacity = 1; const w = tip.offsetWidth; tip.style.left = Math.min(innerWidth - w - 10, e.clientX + 14) + "px"; tip.style.top = (e.clientY + 14) + "px"; }
 const hideTip = () => tip.style.opacity = 0;
 const mins = s => s.split(":").reduce((a, b) => a * 60 + +b);
+const h12 = h => ((+h % 12) || 12) + (+h < 12 ? "am" : "pm");
+const t12 = m => { const h = Math.floor(m / 60) % 24; return ((h % 12) || 12) + ":" + String(Math.round(m % 60)).padStart(2, "0") + " " + (h < 12 ? "am" : "pm"); };
 const hhmm = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(Math.round(m % 60)).padStart(2, "0");
 
 function rows(sel, data, sort) {
@@ -298,7 +300,7 @@ function build() {
   const [reg, att] = TOTAL, peak = ARRIVAL.reduce((a, b) => b[1] > a[1] ? b : a);
   const sd = BUCKET[0], early = BUCKET.slice(3).reduce((s, b) => [s[0] + b[1], s[1] + b[2]], [0, 0]);
   $("#kpis").innerHTML = [["Registered", fmt(reg), "people, repeat bookings left out"], ["Attended (scanned)", fmt(att), pct(att, reg) + " of registered"], ["Did not scan", fmt(reg - att), pct(reg - att, reg) + " of registered"],
-    ["Peak arrival", peak[0] + "–" + hhmm(mins(peak[0]) + 15), fmt(peak[1]) + " scanned in that quarter hour"], ["Doors", "16:36 – 18:51", "first and last scan"], ["Repeat bookings", fmt(DUPS), "of " + fmt(ALLTICKETS) + " tickets made"]]
+    ["Peak arrival", t12(mins(peak[0])) + " – " + t12(mins(peak[0]) + 15), fmt(peak[1]) + " scanned in that quarter hour"], ["Doors", "4:36 pm – 6:51 pm", "first and last scan"], ["Repeat bookings", fmt(DUPS), "of " + fmt(ALLTICKETS) + " tickets made"]]
     .map(([l, v, s]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join("");
   const late = BUCKET.slice(0, 2).reduce((s, b) => [s[0] + b[1], s[1] + b[2]], [0, 0]);
   const sdAtt = SAMEDAY.filter(x => x[1]), gaps = sdAtt.map(([r, s]) => mins(s) - mins(r)).sort((a, b) => a - b), medGap = gaps[Math.floor(gaps.length / 2)];
@@ -314,16 +316,16 @@ function build() {
   rows("#bucket", BUCKET.map(b => [b[0], b[1], b[2]]));
   cols("#daychart", DAYS, d => d === 0 ? "day" : d, { tipName: d => d === 0 ? "Registered on the day" : d + " day(s) before" });
   const sdh = {}; SAMEDAY.forEach(([r, s]) => { const h = r.slice(0, 2); (sdh[h] = sdh[h] || [0, 0]); sdh[h][0]++; if (s) sdh[h][1]++; });
-  cols("#sameday", Object.keys(sdh).sort().map(h => [h, sdh[h][0], sdh[h][1]]), h => h + "h", { minPct: 2, tipName: h => "Signed up " + h + ":00–" + h + ":59" });
+  cols("#sameday", Object.keys(sdh).sort().map(h => [h, sdh[h][0], sdh[h][1]]), h => h12(h), { minPct: 2, tipName: h => "Signed up " + h12(h) + " to " + h12(+h + 1) });
   const am = ARRIVAL.map(a => [a[0], a[1], 0]), tmax = Math.max(...ARRIVAL.map(a => a[1]));
   let s = `<svg class="ch" viewBox="0 0 1000 220"><g>`;
-  ARRIVAL.forEach(([t, n], i) => { const bw = 960 / ARRIVAL.length, x = 30 + i * bw + bw * .1, w = bw * .8, h = n / tmax * 170; s += `<rect x="${x}" y="${180 - h}" width="${w}" height="${h}" rx="4" fill="var(--teal)"/><text x="${x + w / 2}" y="${174 - h}" text-anchor="middle" style="fill:var(--ink2)">${n}</text><text x="${x + w / 2}" y="200" text-anchor="middle">${t}</text>`; });
+  ARRIVAL.forEach(([t, n], i) => { const bw = 960 / ARRIVAL.length, x = 30 + i * bw + bw * .1, w = bw * .8, h = n / tmax * 170; s += `<rect x="${x}" y="${180 - h}" width="${w}" height="${h}" rx="4" fill="var(--teal)"/><text x="${x + w / 2}" y="${174 - h}" text-anchor="middle" style="fill:var(--ink2)">${n}</text><text x="${x + w / 2}" y="200" text-anchor="middle">${t12(mins(t))}</text>`; });
   $("#arrival").innerHTML = s + "</g></svg>";
   const srt = () => rows("#brand", BRAND, attSort === "turnout" ? (a, b) => (b[2] / b[1] - a[2] / a[1]) || b[1] - a[1] : (a, b) => b[1] - a[1]);
   window.attSort = "registered"; srt();
   document.querySelectorAll("#att-sort button").forEach(btn => btn.onclick = () => { attSort = btn.dataset.s; document.querySelectorAll("#att-sort button").forEach(x => x.classList.toggle("on", x === btn)); srt(); });
   rows("#visa", VISA); rows("#heard", HEARD, (a, b) => b[1] - a[1]); rows("#pc", PC); rows("#opt", OPT);
-  cols("#hour", HOUR, h => String(h).padStart(2, "0"), { minPct: 20, tipName: h => "Registered " + String(h).padStart(2, "0") + ":00–" + String(h).padStart(2, "0") + ":59" });
+  cols("#hour", HOUR, h => h12(h), { minPct: 20, tipName: h => "Registered " + h12(h) + " to " + h12(h + 1) });
   rows("#door", [["Scanned once", DOOR.once, DOOR.once], ["Scanned twice", DOOR.twice, DOOR.twice], ["Scanned three times", DOOR.thrice, DOOR.thrice]]);
   $("#door").insertAdjacentHTML("beforeend", `<div class="hint" style="padding:8px">Undone scans: ${DOOR.unscans}. “Already scanned” alerts: ${DOOR.dupAlerts}. No ticket was rejected as unknown.</div>`);
 }
