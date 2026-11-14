@@ -148,6 +148,8 @@ tr:last-child td{border-bottom:0}
 td.h{background:rgba(var(--heat),calc(var(--a)*.45))}
 tfoot td{font-weight:600;border-top:1px solid var(--line2)}
 .scroll{overflow-x:auto}
+#hm-day{font:inherit;font-size:12.5px;padding:6px 10px;border-radius:999px;background:var(--panel2);color:var(--ink);border:1px solid var(--line2)}
+#heat table{min-width:640px}#heat td,#heat th{text-align:center;padding:6px 4px}#heat td:first-child,#heat th:first-child{text-align:left;padding-left:10px;white-space:nowrap}#heat td.pk{outline:2px solid var(--gold);outline-offset:-2px;font-weight:700}#heat td.tt{font-weight:600}
 #tip{position:fixed;z-index:60;pointer-events:none;background:var(--pop);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;font-size:12.5px;box-shadow:var(--shadow);opacity:0;transition:opacity .12s;max-width:260px}
 #tip b{font-weight:600}
 /* registrations vs attendees */
@@ -236,6 +238,12 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
         <div class="seg noprint" id="tl-mode"><button data-m="day" class="on">Per day</button><button data-m="cum">Running total</button></div></div>
       <div class="legend" id="tl-leg"></div>
       <div id="timeline"></div>
+    </div>
+
+    <div class="card w12">
+      <div class="head"><div><h2>Same-day registrations by brand and hour</h2><div class="cap" id="hm-cap"></div></div>
+        <select id="hm-day" class="noprint" aria-label="Choose a day"></select></div>
+      <div class="scroll" id="heat"></div>
     </div>
 
     <div class="card"><h2>Brand</h2><div class="cap">Who sent the student. Click a row to filter.</div><div class="bl" id="bl-brand"></div></div>
@@ -549,6 +557,36 @@ function renderTimeline() {
   $("#tl-cap").textContent = `${shortDay(first)} to ${shortDay(lastD)}. Busiest day: ${best.d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} with ${fmt(best.n)} requests.`;
 }
 
+let hmDay = "";
+function renderHeat() {
+  const v = pool().filter(r => r.t), host = $("#heat"), sel = $("#hm-day");
+  const days = [...new Set(v.map(r => r.day))].sort();
+  if (!days.length) { host.innerHTML = `<div class="empty">No requests match.</div>`; sel.innerHTML = ""; $("#hm-cap").textContent = ""; return; }
+  if (hmDay !== "all" && !days.includes(hmDay)) hmDay = days[days.length - 1];
+  const cnt = d => v.filter(r => r.day === d).length;
+  const dl = d => { const [y, m, dd] = d.split("-").map(Number); return new Date(y, m - 1, dd).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); };
+  sel.innerHTML = `<option value="all">All days together</option>` + days.slice().reverse().map(d => `<option value="${d}">${dl(d)} (${fmt(cnt(d))})</option>`).join("");
+  sel.value = hmDay; sel.onchange = () => { hmDay = sel.value; renderHeat(); };
+  const rs = hmDay === "all" ? v : v.filter(r => r.day === hmDay);
+  const hrs = rs.map(r => r.hour), h0 = Math.min(...hrs), h1 = Math.max(...hrs);
+  const cols = []; for (let h = h0; h <= h1; h++) cols.push(h);
+  const m = new Map(); for (const r of rs) { const o = m.get(r.brand) || { n: 0, h: {} }; o.n++; o.h[r.hour] = (o.h[r.hour] || 0) + 1; m.set(r.brand, o); }
+  const rows = [...m].sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0]));
+  const mx = Math.max(1, ...rows.flatMap(([, o]) => Object.values(o.h)));
+  const colTot = Object.fromEntries(cols.map(h => [h, rs.filter(r => r.hour === h).length]));
+  const hh = h => String(h).padStart(2, "0");
+  const peakH = o => cols.reduce((b, h) => (o.h[h] || 0) > (o.h[b] || 0) ? h : b, cols[0]);
+  host.innerHTML = `<table><thead><tr><th>Brand</th>${cols.map(h => `<th>${hh(h)}</th>`).join("")}<th>Total</th><th>Busiest</th></tr></thead><tbody>` +
+    rows.map(([b, o]) => { const pk = peakH(o); return `<tr><td>${esc(b)}</td>${cols.map(h => o.h[h] ? `<td class="h${h === pk ? " pk" : ""}" style="--a:${o.h[h] / mx}" data-b="${esc(b)}" data-h="${h}">${o.h[h]}</td>` : `<td class="hint">·</td>`).join("")}<td class="tt">${fmt(o.n)}</td><td class="hint">${hh(pk)}:00</td></tr>`; }).join("") +
+    `</tbody><tfoot><tr><td>All brands</td>${cols.map(h => `<td>${colTot[h] || "·"}</td>`).join("")}<td>${fmt(rs.length)}</td><td></td></tr></tfoot></table>`;
+  host.querySelectorAll("td.h").forEach(td => {
+    td.onmousemove = e => showTip(e, `<b>${esc(td.dataset.b)}</b><br>${hh(td.dataset.h)}:00–${hh(td.dataset.h)}:59<br>${td.textContent} requests`);
+    td.onmouseleave = hideTip;
+  });
+  const top = Object.entries(colTot).sort((a, b) => b[1] - a[1])[0];
+  $("#hm-cap").textContent = `${hmDay === "all" ? "All days" : dl(hmDay)}: ${fmt(rs.length)} requests from ${rows.length} brands. Each box is one hour of the day (24-hour clock), darker means more requests, gold outline is that brand's busiest hour. Busiest hour overall: ${hh(top[0])}:00 with ${fmt(top[1])}.`;
+}
+
 function barList(sel, dimId, opts = {}) {
   const d = DIM[dimId], rows = pool(dimId), total = rows.length;
   const counts = countBy(rows, d.get);
@@ -631,7 +669,7 @@ function render() {
   if (!DATA) return;
   $("#bl-area").closest(".card").hidden = !DATA.hasPostcode;   // no Postcode column in a stats-only sheet
   $("#bl-visa").closest(".card").classList.toggle("w12", !DATA.hasPostcode);
-  renderFilters(); renderChips(); renderEvents(); renderKpis(); renderTimeline();
+  renderFilters(); renderChips(); renderEvents(); renderKpis(); renderTimeline(); renderHeat();
   barList("#bl-brand", "brand");
   barList("#bl-visa", "visa");
   barList("#bl-area", "area", { limit: 14, name: k => AREA_NAMES[k] ? `${k} · ${AREA_NAMES[k]}` : k });
