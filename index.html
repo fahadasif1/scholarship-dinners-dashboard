@@ -260,13 +260,6 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
 
     <div class="card w12"><h2>Event-night readiness</h2><div class="cap">Tickets sent and guests checked in at the door, per event. Updates as the sheet's “Ticket sent” and “Checked in” columns are ticked.</div><div class="scroll" id="ready"></div></div>
 
-    <div class="card w12" id="attendance"><h2>Manchester: registered vs attended, by brand</h2><div class="cap">Thu 5 Nov, from the door scanner. Registered counts every ticket issued, online and offline, including repeat bookings, so it is higher than the Manchester card at the top, which leaves out flagged duplicates. Attended counts tickets scanned at the door, so anyone let in without a scan is not included. Scorp Staff looks low because not everyone who registered was given a ticket. These are fixed totals: the filters above do not change them.</div>
-      <div class="att-totals" id="att-totals"></div>
-      <div class="att-top"><div class="legend"><span><i style="background:var(--line2)"></i>Registered</span><span><i style="background:var(--gold)"></i>Attended</span></div>
-      <div class="seg noprint" id="att-sort"><button data-s="registered" class="on">Most registered</button><button data-s="turnout">Best turnout</button></div></div>
-      <div class="att-rows" id="att-rows"></div>
-    </div>
-
   </div>
 
   <footer>
@@ -284,13 +277,6 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
 // Every request counts on the final date, whichever date the form said.
 const EVENT_DATE_FIX = { london: [9, 30], birmingham: [10, 12], canterbury: [11, 2] };   // [month 0-11, day]; Canterbury moved from Thu 26 Nov to Wed 2 Dec
 const REFRESH_MS = 120000;
-// Manchester, Thu 5 Nov: tickets issued and tickets scanned at the door, per brand. Counts only, read on 6 Nov from the scanner sheet (Tickets and Scanned tabs) plus its offline ticket list.
-const MANCHESTER_ATTENDANCE = [
-  ["Kings Consultancy", 167, 46], ["Study Advisers", 163, 32], ["Study Icon", 160, 70], ["Students Club", 143, 23],
-  ["Universal Study Advisors", 120, 29], ["Career Advisers", 95, 19], ["Scorp Staff", 68, 12], ["IAUK", 43, 4],
-  ["Study Empire", 17, 8], ["Study Linkers", 15, 9], ["Study Consultants", 5, 2], ["In-World Education", 4, 0],
-  ["Edulytic", 4, 3], ["SAUK Hartford", 1, 1],
-];
 const DEFAULT_SHEET = { id: "1n66qcAVbnR2s8TdpvAn1DhSrcF59yldMhJuH4bzPLdQ", gid: "0" };   // stats-only copy of the seat requests (no names, phones or emails); a #sheet=… link overrides it
 const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 const COLORS = ["#ffb347","#3fd0c9","#ff6b8b","#a58bff","#6be3a0","#ff7a59"];
@@ -490,11 +476,11 @@ function renderEvents() {
       <div class="big">${fmt(o.n)}<small>seat requests</small></div>
       <div class="meter"><i style="width:${o.n / max * 100}%"></i></div>
       <div class="row"><span>Tickets sent ${fmt(o.t)}</span><span>Checked in ${fmt(o.c)}</span></div>
-      ${/^birmingham/i.test(label) ? `<div class="note">Event done: open the registered vs attended page →</div>` : ""}
+      ${/^(birmingham|manchester)/i.test(label) ? `<div class="note">Event done: open the registered vs attended page →</div>` : ""}
       ${o.moved && !/^canterbury/i.test(label) ? `<div class="note">Includes ${fmt(o.moved)} who signed up when it was listed for ${esc(o.from)}</div>` : ""}
     </button>`;
   }).join("") || `<div class="empty">No events match.</div>`;
-  $("#events").querySelectorAll(".ev").forEach(b => b.onclick = () => /^birmingham/i.test(b.dataset.ev) ? (location.href = "birmingham.html") : toggle("event", b.dataset.ev));
+  $("#events").querySelectorAll(".ev").forEach(b => b.onclick = () => /^(birmingham|manchester)/i.test(b.dataset.ev) ? (location.href = b.dataset.ev.toLowerCase().startsWith("manchester") ? "manchester.html" : "birmingham.html") : toggle("event", b.dataset.ev));
 }
 
 function renderKpis() {
@@ -647,25 +633,6 @@ function renderReady() {
   $("#ready").innerHTML = `<table><thead><tr><th>Event</th><th>Requests</th><th>Tickets sent</th><th>Checked in</th><th>Still to send</th></tr></thead><tbody>${evs.map(e => row(e, v.filter(r => r.event === e))).join("")}</tbody><tfoot>${row("All events", v)}</tfoot></table>`;
 }
 
-let attSort = "registered";
-function renderAttendance() {
-  const reg = MANCHESTER_ATTENDANCE.reduce((s, r) => s + r[1], 0), att = MANCHESTER_ATTENDANCE.reduce((s, r) => s + r[2], 0);
-  $("#att-totals").innerHTML = [["Registered", fmt(reg)], ["Attended", fmt(att)], ["Did not attend", fmt(reg - att)], ["Turnout", pct(att, reg)]].map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join("");
-  const rows = [...MANCHESTER_ATTENDANCE].sort((a, b) => attSort === "turnout" ? (b[2] / b[1] - a[2] / a[1]) || (b[1] - a[1]) : b[1] - a[1]);
-  const max = Math.max(...rows.map(r => r[1]));
-  const box = $("#att-rows");
-  box.innerHTML = rows.map(([b, r, a]) => `<div class="att-row"><div class="att-nm">${esc(b)}</div><div class="att-tr"><i class="att-reg" style="width:${r / max * 100}%"></i>${a ? `<i class="att-att" style="width:${a / max * 100}%"></i>` : ""}</div><div class="att-ct">${fmt(a)} of ${fmt(r)}</div><div class="att-pc">${pct(a, r)}</div></div>`).join("");
-  [...box.children].forEach((el, i) => {
-    const [b, r, a] = rows[i];
-    el.onmousemove = e => showTip(e, `<b>${esc(b)}</b><br>Registered: ${fmt(r)}<br>Attended: ${fmt(a)}<br>Did not attend: ${fmt(r - a)}<br>Turnout: ${pct(a, r)}`);
-    el.onmouseleave = hideTip;
-  });
-  document.querySelectorAll("#att-sort button").forEach(btn => {
-    btn.classList.toggle("on", btn.dataset.s === attSort);
-    btn.onclick = () => { attSort = btn.dataset.s; renderAttendance(); };
-  });
-}
-
 function render() {
   if (!DATA) return;
   $("#bl-area").closest(".card").hidden = !DATA.hasPostcode;   // no Postcode column in a stats-only sheet
@@ -677,7 +644,7 @@ function render() {
   barList("#bl-heard", "heard");
   barList("#bl-source", "source");
   barList("#bl-variant", "variant");
-  renderMatrix(); renderHours(); renderReady(); renderAttendance();
+  renderMatrix(); renderHours(); renderReady();
   saveHash();
 }
 
