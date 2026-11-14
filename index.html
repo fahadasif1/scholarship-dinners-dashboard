@@ -282,7 +282,7 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
 /* ---------- configuration ---------- */
 // Two dinners were moved after bookings opened: London from Thu 29 Oct to Fri 30 Oct, and Birmingham from Mon 2 Nov to Thu 12 Nov.
 // Every request counts on the final date, whichever date the form said.
-const EVENT_DATE_FIX = { london: 30, birmingham: 12 };
+const EVENT_DATE_FIX = { london: [9, 30], birmingham: [10, 12], canterbury: [11, 2] };   // [month 0-11, day]; Canterbury moved from Thu 26 Nov to Wed 2 Dec
 const REFRESH_MS = 120000;
 // Manchester, Thu 5 Nov: tickets issued and tickets scanned at the door, per brand. Counts only, read on 6 Nov from the scanner sheet (Tickets and Scanned tabs) plus its offline ticket list.
 const MANCHESTER_ATTENDANCE = [
@@ -338,11 +338,12 @@ function parseEvent(raw) {
   const mi = m ? MONTHS.indexOf(m[3].toLowerCase()) : -1;
   if (!m || mi < 0) return { label: s, city: s, date: null, moved: false };
   const city = m[1].trim(), said = +m[2];
-  const day = EVENT_DATE_FIX[city.toLowerCase()] || said;
-  const date = new Date(+m[4], mi, day);
+  const fix = EVENT_DATE_FIX[city.toLowerCase()], said0 = new Date(+m[4], mi, said);
+  const date = fix ? new Date(+m[4], fix[0], fix[1]) : said0, day = date.getDate();
   const wd = date.toLocaleDateString("en-GB", { weekday: "short" });
   const mon = date.toLocaleDateString("en-GB", { month: "short" });
-  return { label: `${city} · ${wd} ${day} ${mon}`, city, date, moved: day !== said, from: day !== said ? `${said} ${mon}` : "" };
+  const moved = +date !== +said0;
+  return { label: `${city} · ${wd} ${day} ${mon}`, city, date, moved, from: moved ? `${said} ${said0.toLocaleDateString("en-GB", { month: "short" })}` : "" };
 }
 function postcodeArea(pc) {
   const m = /^([A-Z]{1,2})\d/.exec((pc || "").toUpperCase().replace(/\s+/g, ""));
@@ -490,7 +491,7 @@ function renderEvents() {
       <div class="meter"><i style="width:${o.n / max * 100}%"></i></div>
       <div class="row"><span>Tickets sent ${fmt(o.t)}</span><span>Checked in ${fmt(o.c)}</span></div>
       ${/^birmingham/i.test(label) ? `<div class="note">Event done: open the registered vs attended page →</div>` : ""}
-      ${o.moved ? `<div class="note">Includes ${fmt(o.moved)} who signed up when it was listed for ${esc(o.from)}</div>` : ""}
+      ${o.moved && !/^canterbury/i.test(label) ? `<div class="note">Includes ${fmt(o.moved)} who signed up when it was listed for ${esc(o.from)}</div>` : ""}
     </button>`;
   }).join("") || `<div class="empty">No events match.</div>`;
   $("#events").querySelectorAll(".ev").forEach(b => b.onclick = () => /^birmingham/i.test(b.dataset.ev) ? (location.href = "birmingham.html") : toggle("event", b.dataset.ev));
