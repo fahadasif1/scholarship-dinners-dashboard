@@ -195,6 +195,7 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
   body{background:#fff}
   .card,.ev,.kpi{break-inside:avoid}
 }
+.back{display:inline-flex;align-items:center;color:var(--ink2);text-decoration:none;font-size:13px;padding:8px 14px;border:1px solid var(--line2);border-radius:999px;white-space:nowrap}.back:hover{border-color:var(--gold);color:var(--accent-ink)}
 </style>
 </head>
 <body>
@@ -215,6 +216,7 @@ footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
     <span class="live" role="status"><span class="pulse"></span><span id="asof"></span></span>
     <span class="sp"></span>
     <div class="acts">
+      <a class="back" href="budget.html" style="margin-right:4px">Budget allocation</a>
       <button id="share" type="button" title="Copy a link that opens this exact view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg><span class="lbl-t">Copy view link</span></button>
       <button id="export" type="button" title="Download the counts by event and brand as a CSV"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span class="lbl-t">Export CSV</span></button>
       <button id="print" type="button" title="Print or save as PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M7 14h10v6H7z"/></svg><span class="lbl-t">Print</span></button>

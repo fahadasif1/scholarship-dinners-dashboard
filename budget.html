@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marketing budget allocation · Seat Board</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23ffb347'/><stop offset='1' stop-color='%23ff7a59'/></linearGradient></defs><rect width='64' height='64' rx='16' fill='%23070a12'/><circle cx='32' cy='34' r='15' fill='none' stroke='url(%23g)' stroke-width='5'/><circle cx='32' cy='34' r='5' fill='%233fd0c9'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070a12; --panel:#0d1322; --panel2:#111a2e; --line:#1d2740; --line2:#2a3757;
+  --ink:#eef2fb; --ink2:#a9b4cf; --ink3:#6c7a9c;
+  --gold:#ffb347; --teal:#3fd0c9; --rose:#ff6b8b; --good:#6be3a0; --violet:#a58bff;
+  --accent-ink:#ffb347; --field:#080d1a; --pop:#0a101d; --heat:255,179,71;
+  --hover:rgba(255,255,255,.045); --shadow:0 20px 60px #000c;
+  --glow1:rgba(255,179,71,.10); --glow2:rgba(63,208,201,.08);
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --mono:"DM Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+:root[data-theme=light]{
+  --bg:#f3f5fa; --panel:#ffffff; --panel2:#ffffff; --line:#e4e8f1; --line2:#cdd5e3;
+  --ink:#141a2c; --ink2:#47527a; --ink3:#7883a2;
+  --gold:#e08d16; --teal:#0e9c95; --rose:#d63c62; --good:#18884f; --violet:#6a4fd6;
+  --accent-ink:#985700; --field:#f6f8fc; --pop:#ffffff; --heat:224,141,22;
+  --hover:rgba(20,26,44,.04); --shadow:0 18px 50px rgba(20,26,44,.16);
+  --glow1:rgba(224,141,22,.07); --glow2:rgba(14,156,149,.06);
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0}
+html{background:var(--bg)}
+body{color:var(--ink);font-family:var(--display);font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(1200px 600px at 85% -10%,var(--glow1),transparent 60%),radial-gradient(900px 700px at -10% 10%,var(--glow2),transparent 60%),var(--bg)}
+.wrap{position:relative;max-width:1400px;margin:0 auto;padding:0 28px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent-ink);display:flex;align-items:center;gap:10px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 0 var(--teal);animation:pulse 2.2s infinite;flex:none}
+@keyframes pulse{70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+h1{font-weight:800;letter-spacing:-.03em;line-height:1;margin-top:10px}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--gold),#ff7a59);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--ink2);margin-top:10px;line-height:1.5}
+.hint{color:var(--ink3);font-size:13px}
+button{font:inherit;cursor:pointer;color:var(--ink);background:var(--panel2);border:1px solid var(--line2);border-radius:999px;padding:8px 14px;transition:.2s;white-space:nowrap}
+button:hover{border-color:var(--gold);color:var(--accent-ink)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button.primary{background:linear-gradient(135deg,var(--gold),#ff7a59);color:#1a1005;border:0;font-weight:600}
+button.primary:hover{color:#1a1005;filter:brightness(1.1)}
+button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;margin-right:6px}
+button.ico svg{margin:0}
+
+/* gate */
+#gate{min-height:80vh;display:flex;align-items:center;justify-content:center}
+#gate[hidden],#dash[hidden]{display:none}
+.gate-card{max-width:640px;width:100%;padding:36px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,var(--panel2),var(--panel))}
+.gate-card h1{font-size:clamp(28px,4vw,44px)}
+#gmsg.err{color:var(--rose)}
+.gform{display:flex;gap:10px;margin:22px 0 4px;flex-wrap:wrap}
+
+/* app bar */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0;margin-bottom:12px;
+  background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.mark{font-weight:800;letter-spacing:-.02em;font-size:17px;display:flex;align-items:center;gap:10px}
+.mark span{color:var(--accent-ink)}
+.live{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.sp{flex:1}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+
+/* filters */
+.bar{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.bar-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);min-width:46px}
+.dd{position:relative}
+.dd>summary{list-style:none;cursor:pointer;color:var(--ink);background:var(--panel2);border:1px solid var(--line2);border-radius:999px;padding:7px 14px;user-select:none}
+.dd>summary::-webkit-details-marker{display:none}
+.dd>summary::after{content:"▾";margin-left:8px;color:var(--ink3);font-size:11px}
+.dd[open]>summary,.dd>summary:hover{border-color:var(--gold)}
+.dd.on>summary{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--panel2))}
+.dd .c{font-family:var(--mono);font-size:11px;margin-left:6px;color:var(--accent-ink)}
+.dd .menu{position:absolute;z-index:30;top:calc(100% + 6px);left:0;min-width:250px;max-height:320px;overflow:auto;background:var(--pop);border:1px solid var(--line2);border-radius:14px;padding:6px;box-shadow:var(--shadow)}
+.dd .menu label{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;cursor:pointer}
+.dd .menu label:hover{background:var(--hover)}
+.dd .menu .n{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink3)}
+.dd .menu input{accent-color:var(--gold)}
+.toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink2);font-size:13px}
+.toggle input{accent-color:var(--gold)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:4px 6px 4px 11px;border-radius:999px;background:color-mix(in srgb,var(--gold) 14%,transparent);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);color:var(--ink)}
+.chip b{font-weight:400;color:var(--ink3)}
+.chip button{border:0;background:none;padding:0 6px;font-size:15px;line-height:1;color:var(--ink2)}
+
+/* cards */
+.grid{display:grid;gap:14px}
+.events{grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-bottom:14px}
+.ev{position:relative;display:flex;flex-direction:column;justify-content:flex-start;text-align:left;padding:18px 20px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel2),var(--panel));overflow:hidden;white-space:normal;color:var(--ink)}
+.ev::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--c)}
+.ev.sel{border-color:var(--c);box-shadow:0 0 0 1px var(--c) inset}
+.ev .when{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--c)}
+.ev .city{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+.ev .big{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-top:10px;font-variant-numeric:tabular-nums}
+.ev .big small{font-size:13px;font-weight:400;color:var(--ink3);letter-spacing:0;margin-left:6px}
+.ev .row{display:flex;justify-content:space-between;color:var(--ink2);font-size:12.5px;margin-top:10px}
+.ev .meter{height:5px;border-radius:5px;background:var(--line);margin-top:6px;overflow:hidden}
+.ev .meter i{display:block;height:100%;background:var(--c)}
+.ev .note{margin-top:10px;font-size:12px;color:var(--ink3)}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:14px}
+.kpi{padding:16px 18px;border-radius:16px;border:1px solid var(--line);background:var(--panel)}
+.kpi .l{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.kpi .v{font-size:32px;font-weight:800;letter-spacing:-.03em;margin-top:8px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12.5px;color:var(--ink2);margin-top:4px;min-height:17px}
+.up{color:var(--good)}.down{color:var(--rose)}
+.cols{grid-template-columns:repeat(12,1fr);margin-bottom:14px}
+.card{grid-column:span 6;padding:20px 22px;border-radius:18px;border:1px solid var(--line);background:var(--panel);min-width:0}
+.card.w12{grid-column:span 12}.card.w4{grid-column:span 4}.card.w8{grid-column:span 8}
+.card h2{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.card .cap{font-size:12.5px;color:var(--ink3);margin:4px 0 14px;line-height:1.45}
+.card .head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:5px 12px;background:none;font-size:12.5px;color:var(--ink2)}
+.seg button.on{background:color-mix(in srgb,var(--gold) 20%,transparent);color:var(--ink)}
+h3.sec{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink3);margin:26px 0 12px;font-weight:500}
+
+/* bar lists */
+.bl{display:flex;flex-direction:column;gap:3px}
+.bl .it{display:grid;grid-template-columns:minmax(110px,38%) 1fr auto;gap:12px;align-items:center;padding:5px 8px;border-radius:9px;cursor:pointer;text-align:left}
+.bl .it:hover{background:var(--hover)}
+.bl .it.sel{background:color-mix(in srgb,var(--gold) 12%,transparent)}
+.bl .it.dim{opacity:.4}
+.bl .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.bl .tr{height:9px;border-radius:9px;background:var(--line);overflow:hidden}
+.bl .tr i{display:block;height:100%;border-radius:9px;background:var(--c,var(--gold))}
+.bl .val{font-family:var(--mono);font-size:12px;color:var(--ink2);min-width:84px;text-align:right}
+.bl .val b{color:var(--ink);font-weight:500}
+.empty{color:var(--ink3);padding:10px 4px;font-size:13px}
+
+/* svg + table */
+svg.ch{width:100%;height:auto;display:block;overflow:visible}
+svg.ch text{fill:var(--ink3);font-family:var(--mono);font-size:10.5px}
+svg.ch .gl{stroke:var(--line)}
+svg.ch .hit{fill:transparent}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:12.5px;color:var(--ink2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);text-align:right;font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+td.h{background:rgba(var(--heat),calc(var(--a)*.45))}
+tfoot td{font-weight:600;border-top:1px solid var(--line2)}
+.scroll{overflow-x:auto}
+#sdheat table{min-width:640px}#sdheat td,#sdheat th{text-align:center;padding:6px 4px}#sdheat td:first-child,#sdheat th:first-child{text-align:left;padding-left:10px;white-space:nowrap}#sdheat td.pk{outline:2px solid var(--gold);outline-offset:-2px;font-weight:700}#sdheat td.tt{font-weight:600}
+#tip{position:fixed;z-index:60;pointer-events:none;background:var(--pop);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;font-size:12.5px;box-shadow:var(--shadow);opacity:0;transition:opacity .12s;max-width:260px}
+#tip b{font-weight:600}
+/* registrations vs attendees */
+.att-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.att-top .legend{margin-bottom:0}
+.att-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.att-totals div{min-width:0}
+.att-totals span{display:block;font-size:12px;color:var(--ink3)}
+.att-totals b{display:block;font-size:24px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.att-rows{display:flex;flex-direction:column;gap:3px}
+.att-row{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr) 84px 44px;gap:12px;align-items:center;padding:5px 8px;border-radius:9px}
+.att-row:hover{background:var(--hover)}
+.att-nm{font-size:13px;min-width:0;overflow-wrap:anywhere}
+.att-tr{position:relative;height:16px}
+.att-tr i{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;min-width:3px}
+.att-reg{background:var(--line2)}
+.att-att{background:var(--gold);box-shadow:2px 0 0 var(--panel)}
+.att-ct{font-family:var(--mono);font-size:12px;color:var(--ink2);text-align:right;white-space:nowrap}
+.att-pc{font-family:var(--mono);font-size:12px;color:var(--ink);text-align:right}
+footer{margin-top:30px;color:var(--ink3);font-size:12.5px;line-height:1.6}
+
+@media (max-width:900px){
+  .card,.card.w4,.card.w8{grid-column:span 12}
+  .wrap{padding:0 16px 50px}
+  .lbl-t{display:none}
+  .acts button{padding:8px 11px}
+  .top{position:static}
+  th,td{padding:7px 4px;font-size:12px}
+  th{letter-spacing:0;font-size:9px}
+  td:first-child{max-width:76px}
+  .card{padding:18px 16px}
+  .bl .it{grid-template-columns:minmax(90px,36%) 1fr auto;gap:8px}
+  .bl .val{min-width:70px}
+  .dd .menu{position:fixed;left:16px;right:16px;top:auto;bottom:16px;max-height:55vh}
+  .att-totals{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .att-row{grid-template-columns:minmax(0,1fr) auto 40px;row-gap:5px;padding:6px 4px}
+  .att-nm{grid-column:1;grid-row:1}.att-ct{grid-column:2;grid-row:1}.att-pc{grid-column:3;grid-row:1}
+  .att-tr{grid-column:1 / -1;grid-row:2}
+}
+@media print{
+  .top,.bar .noprint,.acts,#tip,.noprint{display:none!important}
+  :root{--bg:#fff;--panel:#fff;--panel2:#fff;--ink:#111;--ink2:#333;--ink3:#666;--line:#ddd;--line2:#bbb}
+  body{background:#fff}
+  .card,.ev,.kpi{break-inside:avoid}
+}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--ink2);text-decoration:none;font-size:13px;padding:6px 12px;border:1px solid var(--line2);border-radius:999px}
+.back:hover{border-color:var(--gold);color:var(--accent-ink)}
+.top2{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:22px 0 8px}
+.top2 .sp{flex:1}
+.pgh{padding:10px 0 20px}.pgh h1{font-size:clamp(30px,4.4vw,52px)}
+.note{border:1px solid var(--line2);background:var(--panel);border-radius:14px;padding:12px 16px;color:var(--ink2);font-size:13px;line-height:1.55;margin-bottom:14px}
+.note b{color:var(--ink)}
+.ins{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:2px 0 16px}
+.ins div{border-left:3px solid var(--gold);padding:4px 12px;font-size:13px;color:var(--ink2);line-height:1.5}.ins b{color:var(--ink);font-size:18px;display:block;font-weight:600}
+.leg2 i.reg{background:var(--line2)}.leg2 i.att{background:var(--gold)}
+.pill{font-family:var(--mono);font-size:12px;color:var(--teal)}
+</style><style>
+.ctl{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 4px}
+.ctl label{display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.ctl .money{display:flex;align-items:center;gap:6px;background:var(--field);border:1px solid var(--line2);border-radius:12px;padding:8px 12px;font-family:var(--display);font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.ctl input[type=number]{width:130px;background:none;border:0;color:inherit;font:inherit;outline:none;font-variant-numeric:tabular-nums}
+.ctl input:focus-visible{outline:none}
+.ctl .money:focus-within{border-color:var(--gold)}
+.vd{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.v-scale{color:var(--good)}.v-hold{color:var(--teal)}.v-reduce{color:var(--gold)}.v-waste{color:var(--rose)}.v-test{color:var(--violet)}.v-none{color:var(--ink3)}
+.bt{min-width:760px}
+.bt td.l,.bt th.l{text-align:left}
+.bt td:first-child{font-weight:600;white-space:nowrap}
+.bt .why{font-size:12px;color:var(--ink3);white-space:normal;text-align:left;line-height:1.45;min-width:240px;font-weight:400}
+.bt tr.dim td{opacity:.55}
+.mini{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.mini .tr{width:90px;height:9px;border-radius:9px;background:var(--line);overflow:hidden}
+.mini .tr i{display:block;height:100%;border-radius:9px;background:var(--gold)}
+.mini b{font-family:var(--mono);font-size:12.5px;min-width:70px;text-align:right;font-weight:500}
+.up{color:var(--good)}.down{color:var(--rose)}.flat{color:var(--ink3)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px}
+.verd{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px}
+.vc{padding:16px 18px;border-radius:16px;border:1px solid var(--line);background:var(--panel);border-top:3px solid currentColor}
+.vc h3{font-size:14px;font-weight:600;color:var(--ink)}
+.vc .big{font-size:28px;font-weight:800;letter-spacing:-.03em;margin:6px 0;color:var(--ink);font-variant-numeric:tabular-nums}
+.vc p{font-size:12.5px;color:var(--ink2);line-height:1.5}
+.pair{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr) 120px;gap:12px;align-items:center;padding:5px 8px;border-radius:9px}
+.pair:hover{background:var(--hover)}
+.pair .tk{position:relative;height:22px}
+.pair .tk i{position:absolute;left:0;height:9px;border-radius:0 4px 4px 0;min-width:2px}
+.pair .tk .a{top:0;background:var(--line2)}.pair .tk .b{top:12px;background:var(--gold)}
+.pair .nm{font-size:13px}.pair .nu{font-family:var(--mono);font-size:12px;color:var(--ink2);text-align:right}
+@media (max-width:900px){.two{grid-template-columns:1fr}.pair{grid-template-columns:minmax(0,1fr) 100px}.pair .tk{grid-column:1/-1;grid-row:2}.ctl input[type=number]{width:100px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top2"><a class="back" href="./">← All events</a><span class="sp"></span>
+    <div class="acts"><button id="print" type="button">Print</button> <button id="theme" type="button" class="ico" aria-label="Switch light or dark theme">◐</button></div></div>
+  <div class="pgh">
+    <div class="eyebrow">All events · London, Manchester, Birmingham</div>
+    <h1>Marketing budget <em>allocation</em></h1>
+    <p class="sub">Which brand deserves more of the budget and which one is wasting it, worked out from who actually registered and who actually walked in. Type your budget and the split updates.</p>
+  </div>
+  <div class="note"><b>How to read this.</b> A brand is worth what it puts in the room, not what it puts on a form. So the split follows <b>guests who attended</b> (scanned at the door, Manchester and Birmingham), adjusted for how reliably each brand's sign-ups turn up and how many are repeat bookings. There are no spend figures per brand in our records, so this is a recommended split of a budget you set, not a cost-per-guest report. London had no door scan, so its sign-ups count as volume but not as proof. Scorp staff and guest tickets are internal and left out. Small brands (under 50 sign-ups at the two events) are marked <b>Test</b>: the sample is too small to judge.</div>
+
+  <div class="card w12" style="margin-bottom:14px">
+    <h2>Your budget</h2>
+    <div class="ctl">
+      <label>Total marketing budget<span class="money">£<input id="bud" type="number" min="0" step="500" inputmode="numeric" aria-label="Total marketing budget in pounds"></span></label>
+      <label>Method
+        <span class="seg" id="mode"><button type="button" data-m="att" class="on">Pay for guests who come</button><button type="button" data-m="reg">Pay for sign-ups (old way)</button></span></label>
+    </div>
+    <div class="hint" style="margin-top:8px" id="modehint"></div>
+  </div>
+
+  <section class="grid kpis" id="kpis"></section>
+  <div class="ins" id="ins"></div>
+
+  <h3 class="sec">Verdict by brand</h3>
+  <div class="verd" id="verd"></div>
+
+  <div class="card w12" style="margin-bottom:14px">
+    <div class="head"><div><h2>Recommended split, brand by brand</h2><div class="cap">Everything the numbers say about each brand, and the budget it earns. “Came” is people scanned at the door across Manchester and Birmingham, repeat bookings left out. “Avg” is the turnout of all brands together.</div></div></div>
+    <div class="scroll"><table class="bt" id="tbl"></table></div>
+  </div>
+
+  <div class="two">
+    <div class="card" style="margin:0"><h2>Sign-ups vs guests who came</h2><div class="cap">Each brand's share of all sign-ups (grey) against its share of all guests who walked in (gold). Gold longer than grey: the brand brings more than its weight. Grey longer: it fills the form but not the room.</div><div id="pair"></div></div>
+    <div class="card" style="margin:0"><h2>Where the sign-ups were wasted</h2><div class="cap">Sign-ups that never became a guest (no-shows) and repeat bookings, per brand. This is the volume the budget paid for but the room never saw.</div><div class="scroll"><table id="wt"></table></div></div>
+  </div>
+
+  <div class="two">
+    <div class="card" style="margin:0"><h2>Which channel brings guests</h2><div class="cap">The “heard about us” answer, Manchester and Birmingham together. Use it to split the budget across channels inside each brand.</div><div id="chan"></div></div>
+    <div class="card" style="margin:0"><h2>When to spend</h2><div class="cap">Turnout by how many days before the event the person registered, Manchester and Birmingham together.</div><div id="when"></div></div>
+  </div>
+
+  <div class="two">
+    <div class="card" style="margin:0"><h2>Who to aim the ads at</h2><div class="cap">Turnout by visa status the guest gave on the form. The people who come are the ones to find more of.</div><div id="visa"></div></div>
+    <div class="card" style="margin:0"><h2>Manchester to Birmingham: who got better, who got worse</h2><div class="cap">Turnout per brand at each event (brands with 20 or more registered at both). A brand that fell is worth watching before more money goes in.</div><div id="trend"></div></div>
+  </div>
+
+  <div class="card w12" style="margin-bottom:14px"><h2>How the number is worked out</h2>
+    <div class="cap" style="margin-bottom:0;line-height:1.65">
+      <b>Guests who came</b> is the count scanned at the door at Manchester (5 Nov) and Birmingham (12 Nov), one per person. Anyone let in without a scan is not counted, so real turnout is a little higher for everyone.<br>
+      <b>Turnout</b> = came ÷ registered. <b>Vs avg</b> compares a brand's turnout with all external brands together.<br>
+      <b>Verdict</b> (brands with 50 or more registered): <span class="v-scale">Scale up</span> at 1.2× the average or better, <span class="v-hold">Hold</span> from 0.9× to 1.2×, <span class="v-reduce">Reduce</span> from 0.7× to 0.9×, <span class="v-waste">Waste</span> below 0.7×. 10 to 49 registered: <span class="v-test">Test</span>. Fewer than 10: no verdict.<br>
+      <b>Budget share</b> (guest method) = guests who came × the brand's turnout against average (shrunk toward the average for small samples, so one lucky night does not win a big budget) × (1 − its repeat-booking rate). Shares add up to 100%. The sign-up method is the same budget split by registrations, shown for comparison.<br>
+      <b>Not used:</b> Approved status (the team's choice, not the brand's), London (no scan), Canterbury (not held yet: 26 Nov / 2 Dec). When Canterbury and later events are scanned, add their counts to the lists at the top of this page's script and the split updates.
+    </div>
+  </div>
+  <footer id="foot"></footer>
+</div>
+<div id="tip" role="tooltip"></div>
+<script>
+/* Door counts, [brand, registered, attended]. Copied from manchester.html (read 14 Nov 2026) and birmingham.html (14 Nov 2026). Internal Scorp tickets left out. */
+const MAN = [["Kings Consultancy",152,40],["Study Icon",146,65],["Study Advisers",141,26],["Students Club",126,21],["Universal Study Advisors",111,27],["Career Advisers",71,17],["IAUK",36,4],["Study Empire",17,8],["Study Linkers",15,9],["In-World Education",4,0],["Study Consultants",4,1]];
+const BIR = [["Study Icon",139,37],["Study Advisers",109,22],["Students Club",100,15],["Universal Study Advisors",74,22],["Kings Consultancy",68,14],["Career Advisers",51,11],["IAUK",50,9],["Study Linkers",14,1],["Study Consultants",14,0],["Students4UK",12,4],["Study Planners",11,6],["In-World Education",6,2],["Study Orbit",2,0],["Study Empire",2,0],["Sky Consultants",2,0]];
+const MAN_HEARD = [["Friend or referral",255,92],["WhatsApp",155,32],["Email or SMS from a brand",107,25],["Instagram",98,29],["Facebook",96,18],["Other",56,14],["TikTok",43,4],["University or college",10,3],["Google search",3,1]];
+const BIR_HEARD = [["Friend or referral",214,52],["Instagram",90,12],["Facebook",90,18],["WhatsApp",72,12],["TikTok",48,13],["Email or SMS from a brand",88,23],["Other",25,8],["Google search",17,4],["University or college",9,1]];
+const MAN_VISA = [["Graduate visa",430,114],["Student visa",235,61],["Dependant visa",61,19],["Other",46,10],["Skilled Worker visa",44,13],["Other work visa",4,1],["Youth Mobility",3,0]];
+const BIR_VISA = [["Graduate visa",323,81],["Student visa",186,29],["Dependant visa",54,17],["Other",47,6],["Skilled Worker visa",36,9],["Other work visa",4,1],["Youth Mobility",4,0]];
+const MAN_WHEN = [["Same day",16,4],["1 day before",263,64],["2-3 days before",341,95],["4-7 days before",155,48],["8+ days before",103,19]];
+const BIR_WHEN = [["Same day",44,18],["1 day before",108,35],["2-3 days before",192,44],["4-7 days before",97,12],["8+ days before",246,39]];
+/* Snapshot of the stats sheet (all events, all rows, 16 Nov 2026), used if the live read fails: [brand, all rows, repeats flagged, graduate/student visa rows] */
+const SNAP = [["Study Icon", 436, 54, 369], ["Study Advisers", 434, 52, 372], ["Students Club", 320, 42, 250], ["Kings Consultancy", 261, 21, 199], ["Universal Study Advisors", 255, 17, 186], ["Career Advisers", 186, 39, 175], ["IAUK", 143, 25, 118], ["Scorp Staff", 89, 12, 0], ["Study Linkers", 37, 2, 30], ["Study Empire", 26, 0, 14], ["Study Consultants", 23, 2, 19], ["Students4UK", 12, 0, 9], ["Study Planners", 12, 1, 10], ["In-World Education", 11, 1, 9], ["Scorp Guests", 11, 0, 0], ["Sky Consultants", 2, 0, 2], ["Study Orbit", 2, 0, 2], ["Study Global", 1, 0, 0], ["Student Paradise", 1, 0, 0], ["Apply Abroad", 1, 0, 0]];
+const SHEET = { id: "1n66qcAVbnR2s8TdpvAn1DhSrcF59yldMhJuH4bzPLdQ", gid: "0" };
+const INTERNAL = new Set(["Scorp Staff", "Scorp Guests"]);
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = n => Math.round(n).toLocaleString("en-GB");
+const gbp = n => "£" + fmt(n);
+const pct = (a, b) => b ? Math.round(a / b * 100) + "%" : "–";
+const tip = $("#tip");
+function showTip(e, h) { tip.innerHTML = h; tip.style.opacity = 1; const w = tip.offsetWidth; tip.style.left = Math.min(innerWidth - w - 10, e.clientX + 14) + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+const hideTip = () => tip.style.opacity = 0;
+
+let state = { budget: 10000, mode: "att" };
+try { const s = JSON.parse(localStorage.getItem("budget-page") || "{}"); if (s.budget >= 0) state.budget = s.budget; if (s.mode) state.mode = s.mode; } catch (e) {}
+const hp = new URLSearchParams(location.hash.slice(1)); if (hp.get("b") && +hp.get("b") >= 0) state.budget = +hp.get("b"); if (hp.get("m")) state.mode = hp.get("m") === "reg" ? "reg" : "att";
+
+let sheet = null;   // live: Map brand -> {all, dup, fit}
+function snapMap() { const m = new Map(); SNAP.forEach(([b, all, dup, fit]) => m.set(b, { all, dup, fit })); return m; }
+
+function brands() {
+  const map = new Map(), add = (list, k) => list.forEach(([b, r, a]) => { if (INTERNAL.has(b)) return; const o = map.get(b) || { name: b, mr: 0, ma: 0, br: 0, ba: 0 }; o[k + "r"] = r; o[k + "a"] = a; map.set(b, o); });
+  add(MAN, "m"); add(BIR, "b");
+  const sh = sheet || snapMap();
+  sh.forEach((v, b) => { if (INTERNAL.has(b)) return; if (!map.has(b)) map.set(b, { name: b, mr: 0, ma: 0, br: 0, ba: 0 }); });
+  const out = [...map.values()].map(o => { const s = sh.get(o.name) || { all: 0, dup: 0, fit: 0 }; return { ...o, reg: o.mr + o.br, att: o.ma + o.ba, all: s.all, dup: s.dup, fit: s.fit }; });
+  const R = out.reduce((a, o) => a + o.reg, 0), A = out.reduce((a, o) => a + o.att, 0), avg = A / R, K = 30;
+  out.forEach(o => {
+    o.turn = o.reg ? o.att / o.reg : 0; o.idx = o.reg ? o.turn / avg : 0;
+    o.smooth = (o.att + K * avg) / (o.reg + K) / avg;        // shrunk toward the average
+    o.dupRate = o.all ? o.dup / o.all : 0; o.noshow = o.reg - o.att;
+    o.fitRate = o.all ? o.fit / o.all : 0;
+    if (o.reg >= 50) o.v = o.idx >= 1.2 ? "scale" : o.idx >= .9 ? "hold" : o.idx >= .7 ? "reduce" : "waste";
+    else if (o.reg >= 10) o.v = "test"; else o.v = "none";
+    o.wAtt = o.att * o.smooth * (1 - o.dupRate); o.wReg = o.reg;
+  });
+  return { list: out, R, A, avg };
+}
+const VNAME = { scale: "Scale up", hold: "Hold", reduce: "Reduce", waste: "Waste", test: "Test", none: "No data" };
+
+function why(o, avg, T) {
+  const gs = pct(o.att, T.A), rs = pct(o.reg, T.R), t = pct(o.att, o.reg), a = pct(T.A, T.R);
+  if (o.v === "none") return o.reg ? `Only ${o.reg} registered at the scanned events. Nothing to judge yet.` : "No scanned event yet. Give it a small test once its page has real traffic.";
+  if (o.v === "test") return `${o.att} of ${o.reg} came (${t}) against ${a} overall. ${o.idx >= 1.2 ? "Promising, but too few to be sure: a small test slot." : o.idx < .7 ? "Weak start: keep the test small." : "In line with the rest: keep a small test slot."}`;
+  if (o.v === "scale") return `${gs} of all guests from ${rs} of sign-ups. ${t} turnout vs ${a} overall: every pound goes further here.`;
+  if (o.v === "hold") return `${gs} of guests from ${rs} of sign-ups. ${t} turnout, close to the ${a} average. Keep as is.`;
+  if (o.v === "reduce") return `${fmt(o.noshow)} sign-ups never came. ${t} turnout vs ${a} overall. Cut back until the page or message converts better.`;
+  return `Only ${t} came (${o.att} of ${o.reg}) against ${a} overall; ${fmt(o.noshow)} no-shows${o.dupRate > .15 ? ` and ${Math.round(o.dupRate * 100)}% repeat bookings` : ""}. This is where budget is wasted.`;
+}
+
+function build() {
+  const T = brands(), list = T.list, B = state.budget || 0, att = state.mode === "att";
+  const tw = list.reduce((a, o) => a + (att ? o.wAtt : o.wReg), 0), twReg = list.reduce((a, o) => a + o.wReg, 0), twAtt = list.reduce((a, o) => a + o.wAtt, 0);
+  list.forEach(o => { o.shareAtt = twAtt ? o.wAtt / twAtt : 0; o.shareReg = twReg ? o.wReg / twReg : 0; o.share = att ? o.shareAtt : o.shareReg; o.money = o.share * B; o.moneyReg = o.shareReg * B; o.delta = o.shareAtt * B - o.shareReg * B; });
+  const sorted = [...list].sort((a, b) => b.share - a.share || b.att - a.att);
+  const cnt = v => list.filter(o => o.v === v);
+  const moved = list.filter(o => o.delta < 0).reduce((a, o) => a - o.delta, 0);
+  const lose = [...cnt("waste"), ...cnt("reduce")].reduce((a, o) => a + o.noshow, 0);
+
+  $("#modehint").textContent = att ? "Budget follows guests who actually came, adjusted for reliability and repeat bookings. Switch to the sign-up method to see how much it changes."
+    : "The old way: budget follows form fills. Shown so you can see how much money goes to brands whose sign-ups do not turn up.";
+  document.querySelectorAll("#mode button").forEach(b => b.classList.toggle("on", b.dataset.m === state.mode));
+  if (document.activeElement !== $("#bud")) $("#bud").value = state.budget;
+
+  $("#kpis").innerHTML = [
+    ["Budget", gbp(B), "to split across " + list.filter(o => o.money > 0.5).length + " brands"],
+    ["Guests who came", fmt(T.A), pct(T.A, T.R) + " of " + fmt(T.R) + " registered (Manchester + Birmingham)"],
+    ["Moved by this plan", gbp(moved), "taken from sign-up-heavy brands and given to ones that fill the room"],
+    ["Brands to scale", cnt("scale").map(o => o.name).join(", ") || "–", "turnout 1.2× the average or better"],
+    ["Brands wasting it", cnt("waste").map(o => o.name).join(", ") || "–", fmt(cnt("waste").reduce((a, o) => a + o.noshow, 0)) + " sign-ups that never came"],
+  ].map(([l, v, s]) => `<div class="kpi"><div class="l">${l}</div><div class="v" style="${v.length > 14 ? "font-size:20px;line-height:1.25" : ""}">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join("");
+
+  const best = [...list].filter(o => o.reg >= 50).sort((a, b) => b.idx - a.idx)[0], worst = [...list].filter(o => o.reg >= 50).sort((a, b) => a.idx - b.idx)[0];
+  const topG = [...list].sort((a, b) => b.att - a.att)[0], big = [...list].sort((a, b) => b.reg - a.reg)[0];
+  $("#ins").innerHTML = [
+    [best.name, `best proven turnout: ${pct(best.att, best.reg)} (${best.att} of ${best.reg}), ${best.idx.toFixed(1)}× the average of ${pct(T.A, T.R)}.`],
+    [worst.name, `worst proven turnout: ${pct(worst.att, worst.reg)} (${worst.att} of ${worst.reg}), ${worst.idx.toFixed(1)}× the average.`],
+    [topG.name, `brings the most guests (${topG.att}), ${pct(topG.att, T.A)} of everyone who came.`],
+    [big.name === topG.name ? "Most sign-ups" : big.name, big.name === topG.name ? "is also the biggest by sign-ups, so volume and quality agree." : `has the most sign-ups (${big.reg}) but only ${big.att} came (${pct(big.att, big.reg)}). Sign-ups are not guests.`],
+    [fmt(lose), "sign-ups from Reduce and Waste brands never came: that effort bought almost nothing in the room."],
+  ].map(([b, t]) => `<div><b>${esc(b)}</b>${esc(t)}</div>`).join("");
+
+  const vdesc = { scale: "Add budget. Best return per pound.", hold: "Keep roughly as is.", reduce: "Cut back and fix the page, message or audience.", waste: "Stop or move the money until it converts.", test: "Too few to judge. Keep a small test slot." };
+  $("#verd").innerHTML = ["scale", "hold", "reduce", "waste", "test"].map(v => { const g = cnt(v), m = g.reduce((a, o) => a + o.money, 0);
+    return `<div class="vc v-${v}"><h3>${VNAME[v]}</h3><div class="big">${g.length}<small style="font-size:13px;font-weight:400;color:var(--ink3);margin-left:6px">brand${g.length === 1 ? "" : "s"} · ${gbp(m)}</small></div><p>${vdesc[v]}${g.length ? "<br><b style='color:var(--ink)'>" + g.map(o => esc(o.name)).join(", ") + "</b>" : ""}</p></div>`; }).join("");
+
+  const mx = Math.max(1, ...sorted.map(o => o.money));
+  $("#tbl").innerHTML = `<thead><tr><th class="l">Brand</th><th class="l">Verdict</th><th>Signed up</th><th>Came</th><th>Turnout</th><th>vs avg</th><th>Repeats</th><th>Budget</th><th>vs sign-up split</th><th class="l">Why</th></tr></thead><tbody>` +
+    sorted.map(o => { const d = o.money - o.moneyReg, dc = Math.abs(d) < B * .003 ? "flat" : d > 0 ? "up" : "down";
+      return `<tr class="${o.v === "none" ? "dim" : ""}"><td>${esc(o.name)}</td><td class="l"><span class="vd v-${o.v}">${VNAME[o.v]}</span></td><td>${fmt(o.reg)}</td><td>${fmt(o.att)}</td><td>${o.reg ? pct(o.att, o.reg) : "–"}</td><td>${o.reg ? o.idx.toFixed(2) + "×" : "–"}</td><td>${o.all ? Math.round(o.dupRate * 100) + "%" : "–"}</td>
+      <td><div class="mini"><div class="tr"><i style="width:${o.money / mx * 100}%"></i></div><b>${gbp(o.money)}</b></div></td><td class="${dc}">${Math.abs(d) < B * .003 ? "–" : (d > 0 ? "+" : "−") + gbp(Math.abs(d))}</td><td class="why">${esc(why(o, T.avg, T))}</td></tr>`; }).join("") +
+    `</tbody><tfoot><tr><td>All brands</td><td></td><td>${fmt(T.R)}</td><td>${fmt(T.A)}</td><td>${pct(T.A, T.R)}</td><td>1.00×</td><td></td><td style="text-align:right">${gbp(B)}</td><td></td><td></td></tr></tfoot>`;
+
+  // sign-ups vs guests
+  const bs = [...list].filter(o => o.reg > 0).sort((a, b) => b.att - a.att), pmax = Math.max(...bs.map(o => Math.max(o.reg / T.R, o.att / T.A)));
+  $("#pair").innerHTML = `<div class="legend leg2"><span><i class="reg" style="background:var(--line2)"></i>Share of sign-ups</span><span><i style="background:var(--gold)"></i>Share of guests who came</span></div>` +
+    bs.map(o => `<div class="pair" data-b="${esc(o.name)}"><div class="nm">${esc(o.name)}</div><div class="tk"><i class="a" style="width:${o.reg / T.R / pmax * 100}%"></i><i class="b" style="width:${o.att / T.A / pmax * 100}%"></i></div><div class="nu">${pct(o.reg, T.R)} → ${pct(o.att, T.A)}</div></div>`).join("");
+  $("#pair").querySelectorAll(".pair").forEach(el => { const o = list.find(x => x.name === el.dataset.b); el.onmousemove = e => showTip(e, `<b>${esc(o.name)}</b><br>Signed up: ${fmt(o.reg)} (${pct(o.reg, T.R)})<br>Came: ${fmt(o.att)} (${pct(o.att, T.A)})<br>Turnout: ${pct(o.att, o.reg)}`); el.onmouseleave = hideTip; });
+
+  // waste table
+  const wl = [...list].filter(o => o.reg >= 10).sort((a, b) => b.noshow - a.noshow);
+  $("#wt").innerHTML = `<thead><tr><th>Brand</th><th>No-shows</th><th>Repeat bookings</th><th>Combined</th></tr></thead><tbody>` +
+    wl.map(o => `<tr><td>${esc(o.name)}</td><td>${fmt(o.noshow)}</td><td>${fmt(o.dup)}</td><td><b>${fmt(o.noshow + o.dup)}</b></td></tr>`).join("") + `</tbody>`;
+
+  // channels
+  const comb = (a, b) => { const m = new Map(); [...a, ...b].forEach(([k, r, t]) => { const o = m.get(k) || [k, 0, 0]; o[1] += r; o[2] += t; m.set(k, o); }); return [...m.values()]; };
+  const ch = comb(MAN_HEARD, BIR_HEARD).sort((a, b) => b[2] - a[2]), cA = ch.reduce((a, c) => a + c[2], 0), cR = ch.reduce((a, c) => a + c[1], 0), cAvg = cA / cR;
+  $("#chan").innerHTML = `<div class="legend leg2"><span><i style="background:var(--line2)"></i>Registered</span><span><i style="background:var(--gold)"></i>Came</span></div><div class="att-rows">` +
+    ch.map(([k, r, a]) => { const mxc = ch[0][1] > ch.reduce((m, c) => Math.max(m, c[1]), 0) ? ch[0][1] : ch.reduce((m, c) => Math.max(m, c[1]), 0), ix = a / r / cAvg;
+      return `<div class="att-row"><div class="att-nm">${esc(k)}</div><div class="att-tr"><i class="att-reg" style="width:${r / mxc * 100}%"></i><i class="att-att" style="width:${a / mxc * 100}%"></i></div><div class="att-ct">${fmt(a)} / ${fmt(r)}</div><div class="att-pc" title="${ix.toFixed(2)}× the average" style="color:${ix >= 1.15 ? "var(--good)" : ix < .85 ? "var(--rose)" : "var(--ink)"}">${pct(a, r)}</div></div>`; }).join("") + `</div>`;
+  const bestCh = [...ch].filter(c => c[1] >= 60).sort((a, b) => b[2] / b[1] - a[2] / a[1]), worstCh = bestCh[bestCh.length - 1];
+  $("#chan").insertAdjacentHTML("beforeend", `<div class="hint" style="padding:10px 8px 0">Best turnout: <b style="color:var(--ink)">${esc(bestCh[0][0])}</b> (${pct(bestCh[0][2], bestCh[0][1])}). Weakest: <b style="color:var(--ink)">${esc(worstCh[0])}</b> (${pct(worstCh[2], worstCh[1])}). Referrals are well above the average; Instagram, Facebook, TikTok and WhatsApp sit below it, so tie ad budget to a referral or reminder step.</div>`);
+
+  // when
+  const wn = MAN_WHEN.map((m, i) => [m[0], m[1] + BIR_WHEN[i][1], m[2] + BIR_WHEN[i][2]]), wA = wn.reduce((a, c) => a + c[2], 0), wR = wn.reduce((a, c) => a + c[1], 0), wx = Math.max(...wn.map(c => c[1]));
+  $("#when").innerHTML = `<div class="att-rows">` + wn.map(([k, r, a]) => `<div class="att-row"><div class="att-nm">${k}</div><div class="att-tr"><i class="att-reg" style="width:${r / wx * 100}%"></i><i class="att-att" style="width:${a / wx * 100}%"></i></div><div class="att-ct">${fmt(a)} / ${fmt(r)}</div><div class="att-pc">${pct(a, r)}</div></div>`).join("") + `</div>` +
+    `<div class="hint" style="padding:10px 8px 0">People who register in the last 3 days turn up at ${pct(wn[0][2] + wn[1][2] + wn[2][2], wn[0][1] + wn[1][1] + wn[2][1])}; people who register 4 or more days ahead at ${pct(wn[3][2] + wn[4][2], wn[3][1] + wn[4][1])}. Weight ad spend and reminders to the final week, and always send a reminder to early sign-ups.</div>`;
+
+  // visa
+  const vz = comb(MAN_VISA, BIR_VISA).sort((a, b) => b[2] - a[2]), vx = Math.max(...vz.map(c => c[1]));
+  $("#visa").innerHTML = `<div class="att-rows">` + vz.map(([k, r, a]) => `<div class="att-row"><div class="att-nm">${esc(k)}</div><div class="att-tr"><i class="att-reg" style="width:${r / vx * 100}%"></i><i class="att-att" style="width:${a / vx * 100}%"></i></div><div class="att-ct">${fmt(a)} / ${fmt(r)}</div><div class="att-pc">${pct(a, r)}</div></div>`).join("") + `</div>` +
+    `<div class="hint" style="padding:10px 8px 0">Graduate visa and dependant visa holders turn up best, and graduate visa is the biggest group by far. Target audiences like “on a Graduate visa, deciding what comes next”.</div>`;
+
+  // trend
+  const tr = list.filter(o => o.mr >= 20 && o.br >= 20).map(o => ({ n: o.name, m: o.ma / o.mr, b: o.ba / o.br })).sort((a, b) => (b.b - b.m) - (a.b - a.m));
+  $("#trend").innerHTML = `<div class="att-rows">` + tr.map(o => { const d = Math.round((o.b - o.m) * 100); return `<div class="att-row"><div class="att-nm">${esc(o.n)}</div><div class="att-tr"><i class="att-reg" style="width:${o.m * 100 / .5 * 100 / 100}%"></i><i class="att-att" style="width:${o.b * 100 / .5}%;height:60%;top:20%"></i></div><div class="att-ct">${Math.round(o.m * 100)}% → ${Math.round(o.b * 100)}%</div><div class="att-pc ${d > 0 ? "up" : d < 0 ? "down" : ""}">${d > 0 ? "+" : ""}${d}</div></div>`; }).join("") + `</div><div class="hint" style="padding:10px 8px 0">Grey = Manchester turnout, gold = Birmingham. The right-hand number is the change in percentage points. Turnout fell for most brands at Birmingham: that gap is also why recent results count for more than the best-ever result.</div>`;
+
+  $("#foot").textContent = "Sources: door counts from the Manchester and Birmingham pages (scanner joined to the master sheet, read 14 Nov 2026) and the stats-only seat-request sheet (" + (sheet ? "read live" : "snapshot 16 Nov 2026") + "). Counts only: no names, phone numbers or emails. The split is a recommendation from past turnout, not a promise.";
+  try { localStorage.setItem("budget-page", JSON.stringify(state)); } catch (e) {}
+  history.replaceState(null, "", "#b=" + state.budget + "&m=" + state.mode);
+}
+
+function parseCSV(t) {
+  const rows = []; let r = [], f = "", q = false;
+  for (let i = 0; i < t.length; i++) { const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true; else if (c === ",") { r.push(f); f = ""; }
+    else if (c === "\n") { r.push(f); rows.push(r); r = []; f = ""; } else if (c !== "\r") f += c; }
+  if (f || r.length) { r.push(f); rows.push(r); } return rows;
+}
+async function live() {
+  try {
+    const t = await (await fetch(`https://docs.google.com/spreadsheets/d/${SHEET.id}/gviz/tq?tqx=out:csv&gid=${SHEET.gid}`)).text();
+    const rs = parseCSV(t), h = rs[0].map(x => x.trim().toLowerCase()), ix = n => h.indexOf(n);
+    const ib = ix("brand"), id = ix("duplicate?"), iv = ix("visa status"); if (ib < 0 || rs.length < 100) return;
+    const canon = new Map([...MAN, ...BIR, ...SNAP].map(x => [x[0].toLowerCase().replace(/\s+/g, " "), x[0]])), m = new Map();
+    rs.slice(1).forEach(r => { const raw = (r[ib] || "").trim().replace(/\s+/g, " "); if (!raw) return; const b = canon.get(raw.toLowerCase()) || raw;
+      const o = m.get(b) || { all: 0, dup: 0, fit: 0 }; o.all++; if (/^yes$/i.test((r[id] || "").trim())) o.dup++; if (/^(graduate|student) visa$/i.test((r[iv] || "").trim())) o.fit++; m.set(b, o); });
+    sheet = m; build();
+  } catch (e) { /* keep snapshot */ }
+}
+
+function applyTheme(t) { if (!t) t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"; document.documentElement.dataset.theme = t; }
+let th = null; try { th = localStorage.getItem("seat-board-theme"); } catch (e) {}
+applyTheme(th);
+$("#theme").onclick = () => { const n = document.documentElement.dataset.theme === "light" ? "dark" : "light"; applyTheme(n); try { localStorage.setItem("seat-board-theme", n); } catch (e) {} };
+$("#print").onclick = () => print();
+$("#bud").oninput = e => { state.budget = Math.max(0, +e.target.value || 0); build(); };
+document.querySelectorAll("#mode button").forEach(b => b.onclick = () => { state.mode = b.dataset.m; build(); });
+build(); live();
+</script>
+</body>
+</html>
